@@ -18,3 +18,7 @@ local/scipy_openblas64/*.so
 local/scipy_openblas64/*.pyd
 local/scipy_openblas64/*.dylib
 objconv/
+
+gfortran-install/**
+multibuild/**
+OpenBLAS/**
