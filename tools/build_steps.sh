@@ -126,7 +126,7 @@ function build_lib {
         -e MB_ML_VER=${manylinux} \
         -e MB_ML_LIBC=${libc} \
         -v $PWD:/io \
-        --platform "linux/${plat}"
+        --platform "linux/${plat}" \
         $docker_image /io/tools/docker_build_wrap.sh
 }
 
