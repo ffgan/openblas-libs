@@ -2,7 +2,6 @@
 BUILD_PREFIX=/usr/local
 
 ROOT_DIR=$(dirname $(dirname "${BASH_SOURCE[0]}"))
-# source ${ROOT_DIR}/multibuild/common_utils.sh
 
 MB_PYTHON_VERSION=3.9
 
@@ -37,7 +36,6 @@ function before_build {
             sudo chmod 777 /usr/local/include
             touch /usr/local/include/.dir_exists
         fi
-        # source ${ROOT_DIR}/multibuild/osx_utils.sh
         get_macpython_environment ${MB_PYTHON_VERSION} venv
         # Since install_fortran uses `uname -a` to determine arch,
         # force the architecture
