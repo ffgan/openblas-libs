@@ -9,8 +9,8 @@ fi
 
 
 
-
-
+# Build OpenBLAS
+./build-openblas.sh
 
 pwd
 

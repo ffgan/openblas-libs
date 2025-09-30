@@ -51,3 +51,18 @@ manylinux-x86_64-image = "manylinux2014"
 repair-wheel-command = "bash ci-repair-wheel.sh"
 
 test-command = "bash ci-test.sh"
+
+environment-pass = [
+  "REPO_DIR",
+  "OPENBLAS_COMMIT",
+  "MACOSX_DEPLOYMENT_TARGET",
+  "NIGHTLY",
+  "MB_PYTHON_VERSION",
+  "TRAVIS_PYTHON_VERSION",
+  "MB_ML_LIBC",
+  "MB_ML_VER",
+  "INTERFACE64",
+  "BUILD_DIR",
+  "PLAT",
+  "OS-NAME",
+]

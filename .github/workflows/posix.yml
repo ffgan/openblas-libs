@@ -78,10 +78,7 @@ jobs:
       run: |
         echo "PLAT: ${PLAT}"
         echo "DOCKER_TEST_IMAGE: ${DOCKER_TEST_IMAGE}"
-    - name: Build OpenBLAS
-      run: ./build-openblas.sh
-    - name: ls -al
-      run: ls -al
+
     # - name: Setup tmate session
     #   if: ${{ failure() }}
     #   uses: mxschmitt/action-tmate@v3
@@ -95,10 +92,6 @@ jobs:
         output-dir: dist
       env:
         CIBW_BUILD_VERBOSITY: 1
-        CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
-    # - name: Build and test wheel
-    #   run: |
-    #     ./build-wheel.sh
 
     - uses: actions/upload-artifact@v4.3.0
       with:
