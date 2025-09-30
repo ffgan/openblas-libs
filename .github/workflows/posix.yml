@@ -2,12 +2,12 @@ name: posix
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch: null
-  schedule:
-    - cron: '0 0 * * 0'
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  # workflow_dispatch: null
+  # schedule:
+  #   - cron: '0 0 * * 0'
 
 env:
   REPO_DIR: OpenBLAS
