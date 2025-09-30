@@ -131,18 +131,19 @@ function build_lib {
     # Manylinux wrapper
     local libc=${MB_ML_LIBC:-manylinux}
     local docker_image=quay.io/pypa/${libc}${manylinux}_${plat}
-    docker pull $docker_image
-    # Docker sources this script, and runs `do_build_lib`
-    docker run --rm \
-        -e BUILD_PREFIX="$BUILD_PREFIX" \
-        -e PLAT="${plat}" \
-        -e INTERFACE64="${interface64}" \
-        -e NIGHTLY="${nightly}" \
-        -e PYTHON_VERSION="$MB_PYTHON_VERSION" \
-        -e MB_ML_VER=${manylinux} \
-        -e MB_ML_LIBC=${libc} \
-        -v $PWD:/io \
-        $docker_image /io/tools/docker_build_wrap.sh
+    # docker pull $docker_image
+    # # Docker sources this script, and runs `do_build_lib`
+    # docker run --rm \
+    #     -e BUILD_PREFIX="$BUILD_PREFIX" \
+    #     -e PLAT="${plat}" \
+    #     -e INTERFACE64="${interface64}" \
+    #     -e NIGHTLY="${nightly}" \
+    #     -e PYTHON_VERSION="$MB_PYTHON_VERSION" \
+    #     -e MB_ML_VER=${manylinux} \
+    #     -e MB_ML_LIBC=${libc} \
+    #     -v $PWD:/io \
+    #     $docker_image /io/tools/docker_build_wrap.sh
+    bash ./tools/docker_build_wrap.sh
 }
 
 function patch_source {
