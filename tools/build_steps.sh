@@ -2,9 +2,27 @@
 BUILD_PREFIX=/usr/local
 
 ROOT_DIR=$(dirname $(dirname "${BASH_SOURCE[0]}"))
-source ${ROOT_DIR}/multibuild/common_utils.sh
+# source ${ROOT_DIR}/multibuild/common_utils.sh
 
 MB_PYTHON_VERSION=3.9
+
+function any_python {
+    for cmd in $PYTHON_EXE python3 python; do
+        if [ -n "$(type -t $cmd)" ]; then
+            echo $cmd
+            return
+        fi
+    done
+    echo "Could not find python or python3"
+    exit 1
+}
+
+function get_os {
+    # Report OS as given by uname
+    # Use any Python that comes to hand.
+    $(any_python) -c 'import platform; print(platform.uname()[0])'
+}
+
 
 function before_build {
     # Manylinux Python version set in build_lib
@@ -19,7 +37,7 @@ function before_build {
             sudo chmod 777 /usr/local/include
             touch /usr/local/include/.dir_exists
         fi
-        source ${ROOT_DIR}/multibuild/osx_utils.sh
+        # source ${ROOT_DIR}/multibuild/osx_utils.sh
         get_macpython_environment ${MB_PYTHON_VERSION} venv
         # Since install_fortran uses `uname -a` to determine arch,
         # force the architecture
