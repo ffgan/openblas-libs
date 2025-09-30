@@ -97,54 +97,15 @@ jobs:
     - name: Build OpenBLAS
       run: ./build-openblas.sh
 
-    # - name: Install VirtualEnv
-    #   run: |
-    #     python3 -m pip install --upgrade pip
-    #     pip install virtualenv
-    # - name: Build OpenBLAS
-    #   run: |
-    #     set -xeo pipefail
-    #     source tools/build_steps.sh
-    #     echo "------ BEFORE BUILD ---------"
-    #     before_build
-    #     if [[ "$NIGHTLY" = "true" ]]; then
-    #       echo "------ CLEAN CODE --------"
-    #       clean_code $REPO_DIR develop
-    #       echo "------ BUILD LIB --------"
-    #       build_lib "$PLAT" "$INTERFACE64" "1"
-    #     else
-    #       echo "------ CLEAN CODE --------"
-    #       clean_code $REPO_DIR $OPENBLAS_COMMIT
-    #       echo "------ BUILD LIB --------"
-    #       build_lib "$PLAT" "$INTERFACE64" "0"
-    #     fi
+    # - name: Setup tmate session
+    #   if: ${{ failure() }}
+    #   uses: mxschmitt/action-tmate@v3
+    #   with:
+    #     limit-access-to-actor: true
 
-    # # - name: Setup tmate session
-    # #   if: ${{ failure() }}
-    # #   uses: mxschmitt/action-tmate@v3
-    # #   with:
-    # #     limit-access-to-actor: true
     - name: Build and test wheel
       run: |
         ./build-wheel.sh
-    # - name: Build and test wheel
-    #   run: |
-    #     if [[ "$NIGHTLY" = "true" ]]; then
-    #       # Set the pyproject.toml version: convert v0.3.24-30-g138ed79f to 0.3.34.30
-    #       version=$(cd OpenBLAS && git describe --tags --abbrev=8 | sed -e "s/^v\(.*\)-g.*/\1/" | sed -e "s/-/./g")
-    #       sed -e "s/^version = .*/version = \"${version}\"/" -i.bak pyproject.toml
-    #     fi
-    #     if [ "macos-latest" == "${ OS-NAME }" ]; then
-    #       source tools/build_wheel.sh
-    #     else
-    #       libc=${MB_ML_LIBC:-manylinux}
-    #       docker_image=quay.io/pypa/${libc}${MB_ML_VER}_${PLAT}
-    #       docker run --rm -e INTERFACE64="${INTERFACE64}" \
-    #         -e MB_ML_LIBC="${MB_ML_LIBC}" \
-    #         -v $(pwd):/openblas $docker_image \
-    #         /bin/bash -xe /openblas/tools/build_wheel.sh
-    #       sudo chmod -R a+w dist
-    #     fi
 
     - uses: actions/upload-artifact@v4.3.0
       with:
