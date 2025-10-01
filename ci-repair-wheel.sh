@@ -26,3 +26,8 @@ else
     patchelf --force-rpath --set-rpath '$ORIGIN' */lib/libgfortran*
     zip $1/*.whl */lib/libgfortran*
 fi
+
+
+
+# copy libs/openblas*.tar.gz to dist/
+cp libs/openblas*.tar.gz dist/
