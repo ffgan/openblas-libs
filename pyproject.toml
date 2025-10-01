@@ -45,12 +45,9 @@ scipy_openblas64 = ["lib/*", "include/*", "lib/pkgconfig/*", "lib/cmake/openblas
 
 before-build = "bash ci-before-build.sh"
 
-# Build using the manylinux2014 image
-manylinux-x86_64-image = "manylinux2014"
+repair-wheel-command = "bash ci-repair-wheel.sh {dest_dir} {wheel}"
 
-repair-wheel-command = "bash ci-repair-wheel.sh"
-
-test-command = "bash ci-test.sh"
+test-command = "pwd && ls -al && cd {package} && bash ci-test.sh "
 
 environment-pass = [
   "REPO_DIR",

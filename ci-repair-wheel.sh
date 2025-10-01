@@ -11,8 +11,10 @@ if [ $(uname) == "Darwin" ]; then
     fi
     delocate-wheel -v dist/*.whl
 else
-    auditwheel repair -w dist --lib-sdir /lib dist/*.whl
-    rm dist/scipy_openblas*-none-any.whl
+    auditwheel repair -w $1 --lib-sdir /lib $2
+    # rm dist/scipy_openblas*-none-any.whl
+    # rm {dest_dir}/*.whl
+    
     # Add an RPATH to libgfortran:
     # https://github.com/pypa/auditwheel/issues/451
     if [ "$MB_ML_LIBC" == "musllinux" ]; then
@@ -20,7 +22,7 @@ else
     else
       yum install -y zip
     fi
-    unzip dist/*.whl "*libgfortran*"
+    unzip $1/*.whl "*libgfortran*"
     patchelf --force-rpath --set-rpath '$ORIGIN' */lib/libgfortran*
-    zip dist/*.whl */lib/libgfortran*
+    zip $1/*.whl */lib/libgfortran*
 fi

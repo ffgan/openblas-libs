@@ -28,7 +28,6 @@ jobs:
 
           # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
           - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1'}
 
           # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
           # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
@@ -92,6 +91,13 @@ jobs:
         output-dir: dist
       env:
         CIBW_BUILD_VERBOSITY: 1
+        CIBW_BUILD:  "cp39-${{ matrix.MB_ML_LIBC }}_${{matrix.PLAT}}"
+
+        CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.MB_ML_LIBC }}/${{matrix.MB_ML_VER}}
+        CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.MB_ML_LIBC }}/${{matrix.MB_ML_VER}}
+        CIBW_MUSLLINUX_X86_64_IMAGE: ${{ matrix.MB_ML_LIBC }}/${{matrix.MB_ML_VER}}
+        CIBW_MANYLINUX_AARCH64_IMAGE: ${{ matrix.MB_ML_LIBC }}/${{matrix.MB_ML_VER}}
+        CIBW_MUSLLINUX_AARCH64_IMAGE: ${{ matrix.MB_ML_LIBC }}/${{matrix.MB_ML_VER}}
 
     - uses: actions/upload-artifact@v4.3.0
       with:

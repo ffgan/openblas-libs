@@ -13,9 +13,9 @@ if [ "$(uname)" == "Darwin" -a "${PLAT}" == "x86_64" ]; then
     PYTHON="arch -x86_64 python3.11"
 fi
 if [ "${INTERFACE64}" != "1" ]; then
-  $PYTHON -m pip install --no-index --find-links dist scipy_openblas32
+  $PYTHON -m pip install --no-index --find-links /tmp/cibuildwheel/repaired_wheel scipy_openblas32
   $PYTHON -m scipy_openblas32
 else
-  $PYTHON -m pip install --no-index --find-links dist scipy_openblas64
+  $PYTHON -m pip install --no-index --find-links /tmp/cibuildwheel/repaired_wheel scipy_openblas64
   $PYTHON -m scipy_openblas64
 fi
