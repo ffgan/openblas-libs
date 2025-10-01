@@ -13,13 +13,7 @@ if [ $(uname) == "Darwin" ]; then
     # fi
     delocate-wheel -w $1 -v $2
 
-    if [ "${PLAT}" == "arm64" ]; then
-      cp libs/openblas*.tar.gz dist/
-    else
-      mkdir -p /output
-      # copy libs/openblas*.tar.gz to dist/
-      cp libs/openblas*.tar.gz /output/
-    fi
+    cp libs/openblas*.tar.gz dist/
 else
     auditwheel repair -w $1 --lib-sdir /lib $2
     # rm dist/scipy_openblas*-none-any.whl
