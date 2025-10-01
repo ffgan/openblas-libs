@@ -28,6 +28,6 @@ else
 fi
 
 
-
+mkdir -p /output
 # copy libs/openblas*.tar.gz to dist/
-cp libs/openblas*.tar.gz dist/
+cp libs/openblas*.tar.gz /output/
