@@ -66,7 +66,7 @@ unset -f popd
 
 
 # Build OpenBLAS
-./build-openblas.sh
+source build-openblas.sh
 
 pwd
 
