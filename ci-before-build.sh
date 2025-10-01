@@ -77,14 +77,8 @@ function cmd_notexit {
     return $retval
 }
 
-source tools/osx_utils.sh
-
 # Build OpenBLAS
 source build-openblas.sh
-
-pwd
-
-ls -al
 
 
 ls libs/openblas* >/dev/null 2>&1 && true
