@@ -12,6 +12,14 @@ if [ $(uname) == "Darwin" ]; then
     #     for f in $2/*.whl; do mv $f "${f/%any.whl/macosx_10_9_$PLAT.whl}"; done
     # fi
     delocate-wheel -w $1 -v $2
+
+    if [ "${PLAT}" == "arm64" ]; then
+      cp libs/openblas*.tar.gz dist/
+    else
+      mkdir -p /output
+      # copy libs/openblas*.tar.gz to dist/
+      cp libs/openblas*.tar.gz /output/
+    fi
 else
     auditwheel repair -w $1 --lib-sdir /lib $2
     # rm dist/scipy_openblas*-none-any.whl
