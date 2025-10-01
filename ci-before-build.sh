@@ -8,6 +8,62 @@ if [[ "$NIGHTLY" = "true" ]]; then
 fi
 
 
+#!/bin/bash
+# Utilities for both OSX and Docker Linux
+# python or python3 should be on the PATH
+
+# Only source common_utils once
+if [ -n "$COMMON_UTILS_SOURCED" ]; then
+    return
+fi
+COMMON_UTILS_SOURCED=1
+
+# Turn on exit-if-error
+set -e
+
+MULTIBUILD_DIR=$(dirname "${BASH_SOURCE[0]}")
+DOWNLOADS_SDIR=downloads
+PYPY_URL=https://downloads.python.org/pypy
+# For back-compatibility.  We use the "ensurepip" module now
+# instead of get-pip.py
+GET_PIP_URL=https://bootstrap.pypa.io/get-pip.py
+
+# Unicode width, default 32. Used here and in travis_linux_steps.sh
+# In docker_build_wrap.sh it is passed in when calling "docker run"
+# The docker test images also use it when choosing the python to run
+# with, so it is passed in when calling "docker run" for tests.
+UNICODE_WIDTH=${UNICODE_WIDTH:-32}
+
+if [ $(uname) == "Darwin" ]; then
+  IS_MACOS=1; IS_OSX=1;
+else
+  # In the manylinux_2_24 image, based on Debian9, "python" is not installed
+  # so link in something for the various system calls before PYTHON_EXE is set
+  which python || export PATH=/opt/python/cp39-cp39/bin:$PATH
+
+  if [ "$MB_ML_LIBC" == "musllinux" ]; then
+    IS_ALPINE=1;
+    MB_ML_VER=${MB_ML_VER:-"_1_2"}
+  else
+    # Default Manylinux version
+    MB_ML_VER=${MB_ML_VER:-2014}
+  fi
+fi
+
+# Work round bug in travis xcode image described at
+# https://github.com/direnv/direnv/issues/210
+shell_session_update() { :; }
+
+# Workaround for https://github.com/travis-ci/travis-ci/issues/8703
+# suggested by Thomas K at
+# https://github.com/travis-ci/travis-ci/issues/8703#issuecomment-347881274
+unset -f cd
+unset -f pushd
+unset -f popd
+
+
+
+
 
 # Build OpenBLAS
 ./build-openblas.sh
