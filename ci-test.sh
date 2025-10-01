@@ -7,10 +7,10 @@ if [ "${PLAT}" == "arm64" ]; then
     exit 0
 fi
 
-PYTHON=python3.11
+PYTHON=python3.9
 if [ "$(uname)" == "Darwin" -a "${PLAT}" == "x86_64" ]; then
-    which python3.11
-    PYTHON="arch -x86_64 python3.11"
+    which python3.9
+    PYTHON="arch -x86_64 python3.9"
 fi
 if [ "${INTERFACE64}" != "1" ]; then
   # cibuildwheel will install the wheel automatically
