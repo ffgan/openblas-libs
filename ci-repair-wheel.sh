@@ -11,7 +11,7 @@ if [ $(uname) == "Darwin" ]; then
     # else
     #     for f in $2/*.whl; do mv $f "${f/%any.whl/macosx_10_9_$PLAT.whl}"; done
     # fi
-    delocate-wheel -w $1 -v $2/*.whl
+    delocate-wheel -w $1 -v $2
 else
     auditwheel repair -w $1 --lib-sdir /lib $2
     # rm dist/scipy_openblas*-none-any.whl
