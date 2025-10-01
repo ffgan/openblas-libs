@@ -30,10 +30,10 @@ jobs:
           # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
           # - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          # - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
           # - { os: macos-15, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-14, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
           # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
           # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
