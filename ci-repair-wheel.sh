@@ -7,11 +7,11 @@ if [ $(uname) == "Darwin" ]; then
     $PYTHON -m pip install delocate
     # move the mis-named scipy_openblas64-none-any.whl to a platform-specific name
     if [ "${PLAT}" == "arm64" ]; then
-        for f in dist/*.whl; do mv $f "${f/%any.whl/macosx_11_0_$PLAT.whl}"; done
+        for f in $2/*.whl; do mv $f "${f/%any.whl/macosx_11_0_$PLAT.whl}"; done
     else
-        for f in dist/*.whl; do mv $f "${f/%any.whl/macosx_10_9_$PLAT.whl}"; done
+        for f in $2/*.whl; do mv $f "${f/%any.whl/macosx_10_9_$PLAT.whl}"; done
     fi
-    delocate-wheel -v dist/*.whl
+    delocate-wheel -w $1 -v $2/*.whl
 else
     auditwheel repair -w $1 --lib-sdir /lib $2
     # rm dist/scipy_openblas*-none-any.whl
