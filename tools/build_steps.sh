@@ -36,7 +36,9 @@ function before_build {
             sudo chmod 777 /usr/local/include
             touch /usr/local/include/.dir_exists
         fi
-        get_macpython_environment ${MB_PYTHON_VERSION} venv
+        # get_macpython_environment ${MB_PYTHON_VERSION} venv
+        python3.9 -m venv venv
+        source venv/bin/activate
         # Since install_fortran uses `uname -a` to determine arch,
         # force the architecture
         arch -${PLAT} bash -s << EOF
