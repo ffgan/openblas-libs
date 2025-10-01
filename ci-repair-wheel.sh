@@ -1,6 +1,8 @@
 #! /bin/bash
 set -xe
 
+PYTHON=${PYTHON:-python3.9}
+
 if [ $(uname) == "Darwin" ]; then
     $PYTHON -m pip install delocate
     # move the mis-named scipy_openblas64-none-any.whl to a platform-specific name
