@@ -63,7 +63,7 @@ unset -f popd
 
 
 
-
+source tools/osx_utils.sh
 
 # Build OpenBLAS
 source build-openblas.sh

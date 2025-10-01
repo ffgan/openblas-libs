@@ -40,7 +40,7 @@ function before_build {
         # Since install_fortran uses `uname -a` to determine arch,
         # force the architecture
         arch -${PLAT} bash -s << EOF
-source ${ROOT_DIR}/tools/gfortran_utils.sh
+source tools/gfortran_utils.sh
 install_gfortran
 EOF
         # Deployment target set by gfortran_utils
