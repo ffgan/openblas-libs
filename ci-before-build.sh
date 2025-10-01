@@ -61,7 +61,21 @@ unset -f cd
 unset -f pushd
 unset -f popd
 
-
+function cmd_notexit {
+    # wraps a command, capturing its return code and preventing it
+    # from exiting the shell. Handles -e / +e modes.
+    # Parameters
+    #    cmd - command
+    #    any further parameters are passed to the wrapped command
+    # If called without an argument, it will exit the shell with an error
+    local cmd=$1
+    if [ -z "$cmd" ];then echo "no command"; exit 1; fi
+    if [[ $- = *e* ]]; then errexit_set=true; fi
+    set +e
+    ("${@:1}") ; retval=$?
+    [[ -n $errexit_set ]] && set -e
+    return $retval
+}
 
 source tools/osx_utils.sh
 
