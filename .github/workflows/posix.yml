@@ -157,6 +157,7 @@ jobs:
     #     limit-access-to-actor: true
   
     - name: Set CIBW_BUILD
+      shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" && "${{matrix.PLAT}}" == "x86" ]; then
           echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}32" >> $GITHUB_ENV
