@@ -46,8 +46,8 @@ jobs:
 
 
           - { os: windows-latest, PLAT: x64, INTERFACE64: '1'}
-          - { os: windows-latest, PLAT: x64, INTERFACE64: '0'}
-          - { os: windows-latest, PLAT: x86, INTERFACE64: '0'}
+          # - { os: windows-latest, PLAT: x64, INTERFACE64: '0'}
+          # - { os: windows-latest, PLAT: x86, INTERFACE64: '0'}
 
     env:
       NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
@@ -68,6 +68,20 @@ jobs:
       if: ${{ contains(matrix.os, 'macos') }}
       with:
         xcode-version: '16.0'
+    - name: set env for windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        echo "OPENBLAS_ROOT=\"c:\\opt\"" >> $env:GITHUB_ENV
+        # Preserve working directory for calls into bash
+        # Without this, invoking bash will cd to the home directory
+        echo "CHERE_INVOKING=\"yes\"" >> $env:GITHUB_ENV
+        echo "BASH_PATH: \"c:\\rtools40\\usr\\bin\\bash.exe\"" >> $env:GITHUB_ENV
+
+    - name: install-rtools
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        # rtools 42+ does not support 32 bits builds.
+        choco install -y rtools --no-progress --force --version=4.0.0.20220206
 
     - name: Print some Environment variable
       run: |
