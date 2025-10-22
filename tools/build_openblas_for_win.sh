@@ -1,6 +1,3 @@
-#!/bin/bash
-set -ex
-
 # Build
 git submodule update --init --recursive
 & $env:BASH_PATH -lc tools/build_openblas.sh

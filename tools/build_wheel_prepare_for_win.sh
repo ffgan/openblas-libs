@@ -1,4 +1,3 @@
-#!/bin/bash
 set -xeo pipefail
 python -m pip install wheel
 # This will fail if there is more than one file in libs
