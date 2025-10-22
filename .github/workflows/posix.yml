@@ -2,12 +2,12 @@ name: posix
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch: null
-  schedule:
-    - cron: '0 0 * * 0'
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  # workflow_dispatch: null
+  # schedule:
+  #   - cron: '0 0 * * 0'
 
 env:
   REPO_DIR: OpenBLAS
@@ -24,25 +24,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
           - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: macos-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+
+
+          - { os: windows-latest, PLAT: x64, INTERFACE64: '1'}
+          - { os: windows-latest, PLAT: x64, INTERFACE64: '0'}
+          - { os: windows-latest, PLAT: x86, INTERFACE64: '0'}
 
     env:
       NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
@@ -90,6 +95,7 @@ jobs:
         CIBW_MUSLLINUX_AARCH64_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
 
     - name: Upload wheels to artifacts
+      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm' || matrix.os == 'macos-latest' }}
       uses: actions/upload-artifact@v4.3.0
       with:
         name: wheels-${{ matrix.os }}-${{ matrix.PLAT }}-${{ matrix.INTERFACE64 }}-${{ matrix.MB_ML_LIBC }}-${{ matrix.MB_ML_VER }}
@@ -97,10 +103,24 @@ jobs:
 
 
     - name: Upload openblas to artifacts
+      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm' || matrix.os == 'macos-latest' }}
       uses: actions/upload-artifact@v4.3.0
       with:
         name: openblas-${{ matrix.os }}-${{ matrix.PLAT }}-${{ matrix.INTERFACE64 }}-${{ matrix.MB_ML_LIBC }}-${{ matrix.MB_ML_VER }}
         path: dist/openblas*.tar.gz
+
+    - uses: actions/upload-artifact@v4.3.0
+      if: ${{ matrix.os == 'windows-latest' }}
+      with:
+        name: wheels-${{matrix.plat }}-${{ matrix.INTERFACE64 }}
+        path: dist/scipy_openblas*.whl
+
+    - uses: actions/upload-artifact@v4.3.0
+      if: ${{ matrix.os == 'windows-latest' }}
+      with:
+        name: openblas-${{matrix.plat }}-${{ matrix.INTERFACE64 }}
+        path: builds/openblas*.zip
+
 
     - uses: conda-incubator/setup-miniconda@v3.2.0
       with:
