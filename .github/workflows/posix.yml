@@ -26,30 +26,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
+          # - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
+          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
-          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
 
-          - { os: windows-latest, PLAT: amd64, INTERFACE64: '1', MB_ML_LIBC: win, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win, CIBW_BUILD: "cp39-${MB_ML_LIBC}_${PLAT}"}
-          - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win, CIBW_BUILD: "cp39-${MB_ML_LIBC}32"}
+          - { os: windows-latest, PLAT: amd64, INTERFACE64: '1', MB_ML_LIBC: win}
+          - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
+          - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
 
           # - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: win}
           # - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: win}
@@ -162,7 +162,7 @@ jobs:
         output-dir: dist
       env:
         CIBW_BUILD_VERBOSITY: 1
-        CIBW_BUILD:  ${{ matrix.CIBW_BUILD }}
+        CIBW_BUILD:  "cp39-${{ matrix.MB_ML_LIBC }}_${{matrix.PLAT}}"
 
         CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
         CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
