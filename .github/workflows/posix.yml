@@ -48,8 +48,11 @@ jobs:
 
 
           - { os: windows-latest, PLAT: amd64, INTERFACE64: '1', MB_ML_LIBC: win}
-          # - { os: windows-latest, PLAT: x64, INTERFACE64: '0'}
-          # - { os: windows-latest, PLAT: x86, INTERFACE64: '0'}
+          # - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
+
+          - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: win}
+          # - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: win}
 
     env:
       NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
@@ -113,6 +116,38 @@ jobs:
       run: |
         echo CIBW_ENVIRONMENT_WINDOWS=$env:CIBW_ENVIRONMENT_WINDOWS
 
+
+    - name: Setup visual studio
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Download, install 7zip.
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      run: |
+        Invoke-WebRequest https://www.7-zip.org/a/7z2409-arm64.exe -UseBasicParsing -OutFile 7z_arm.exe
+        Start-Process -FilePath ".\7z_arm.exe" -ArgumentList "/S" -Wait
+        echo "C:\Program Files\7-Zip" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Download and install LLVM installer
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      run: |
+        Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.5/LLVM-19.1.5-woa64.exe -UseBasicParsing -OutFile LLVM-woa64.exe
+        Start-Process -FilePath ".\LLVM-woa64.exe" -ArgumentList "/S" -Wait
+        echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Update CMake for WoA
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      run: |
+        pip install cmake
+        get-command cmake
+    - name: Set env variables
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      run: |
+        if ( ${{ matrix.INTERFACE64 }} -eq "1" ) {
+          echo "INTERFACE_BITS=64" >> $env:GITHUB_ENV
+        } else {
+          echo "INTERFACE_BITS=32" >> $env:GITHUB_ENV
+        }
 
 
     # - name: Setup tmate session
