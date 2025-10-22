@@ -58,13 +58,13 @@ environment-pass = [
 before-build = "bash ci-before-build.sh"
 repair-wheel-command = "bash ci-repair-wheel.sh {dest_dir} {wheel}"
 test-command = "cd {package} && bash ci-test.sh "
-archs = ["x86_64", "aarch64"]
+archs = ["x86_64", "aarch64", "i686"]
 
 [tool.cibuildwheel.macos]
 before-build = "bash ci-before-build.sh"
 repair-wheel-command = "bash ci-repair-wheel.sh {dest_dir} {wheel}"
 test-command = "cd {package} && bash ci-test.sh"
-archs = ["x86_64", "universal2"]
+archs = ["x86_64", "universal2", "arm64"]
 
 [tool.cibuildwheel.windows]
 before-build = "pwsh -File  tools/build_openblas_for_win.ps1 && bash tools/build_wheel_prepare_for_win.sh"
