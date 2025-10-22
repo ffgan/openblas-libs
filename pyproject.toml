@@ -67,7 +67,7 @@ test-command = "cd {package} && bash ci-test.sh"
 archs = ["x86_64", "universal2"]
 
 [tool.cibuildwheel.windows]
-before-build = "bash tools/build_openblas_for_win.sh && bash tools/build_wheel_prepare_for_win.sh"
+before-build = "pwsh -File  tools/build_openblas_for_win.ps1 && bash tools/build_wheel_prepare_for_win.sh"
 repair-wheel-command = "for f in dist/*.whl; do mv $f \"${f/%any.whl/$WHEEL_PLAT.whl}\"; done"
 test-command = "cd {package} && bash test_for_win.sh"
 archs = ["AMD64", "x86", "ARM64"]
