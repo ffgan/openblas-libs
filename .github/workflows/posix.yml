@@ -126,7 +126,6 @@ jobs:
       with:
         output-dir: dist
       env:
-        CIBW_ARCHS: ${{matrix.PLAT}}
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD:  "cp39-${{ matrix.MB_ML_LIBC }}_${{matrix.PLAT}}"
 

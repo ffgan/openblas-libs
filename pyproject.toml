@@ -58,13 +58,16 @@ environment-pass = [
 before-build = "bash ci-before-build.sh"
 repair-wheel-command = "bash ci-repair-wheel.sh {dest_dir} {wheel}"
 test-command = "cd {package} && bash ci-test.sh "
+archs = ["x86_64", "aarch64"]
 
 [tool.cibuildwheel.macos]
 before-build = "bash ci-before-build.sh"
 repair-wheel-command = "bash ci-repair-wheel.sh {dest_dir} {wheel}"
-test-command = "cd {package} && bash ci-test.sh "
+test-command = "cd {package} && bash ci-test.sh"
+archs = ["x86_64", "universal2"]
 
 [tool.cibuildwheel.windows]
 before-build = "bash tools/prepare_win.sh"
 repair-wheel-command = "for f in dist/*.whl; do mv $f \"${f/%any.whl/$WHEEL_PLAT.whl}\"; done"
 test-command = "cd {package} && bash test_for_win.sh"
+archs = ["AMD64", "x86", "ARM64"]
