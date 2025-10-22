@@ -155,6 +155,15 @@ jobs:
     #   uses: mxschmitt/action-tmate@v3
     #   with:
     #     limit-access-to-actor: true
+  
+    - name: Set CIBW_BUILD
+      run: |
+        if [ "${{ matrix.os }}" == "windows-latest" && "${{matrix.PLAT}}" == "x86" ]; then
+          echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}32" >> $GITHUB_ENV
+        else
+          echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}_${{ matrix.PLAT }}" >> $GITHUB_ENV
+        fi
+
 
     - name: Build and Test wheels
       uses: pypa/cibuildwheel@v3.1.4
@@ -162,7 +171,6 @@ jobs:
         output-dir: dist
       env:
         CIBW_BUILD_VERBOSITY: 1
-        CIBW_BUILD:  "cp39-${{ matrix.MB_ML_LIBC }}_${{matrix.PLAT}}"
 
         CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
         CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
