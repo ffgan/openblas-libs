@@ -13,13 +13,15 @@ env:
   REPO_DIR: OpenBLAS
   OPENBLAS_COMMIT: "v0.3.30"
   MACOSX_DEPLOYMENT_TARGET: 10.9
+  OPENBLAS_ROOT: "c:\\opt"
+  # Preserve working directory for calls into bash
+  # Without this, invoking bash will cd to the home directory
+  CHERE_INVOKING: "yes"
+  BASH_PATH: "c:\\rtools40\\usr\\bin\\bash.exe"
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -74,15 +76,6 @@ jobs:
       run: |
         # rtools 42+ does not support 32 bits builds.
         choco install -y rtools --no-progress --force --version=4.0.0.20220206
-
-    - name: set env for windows
-      if: ${{ matrix.os == 'windows-latest' }}
-      run: |
-        echo 'OPENBLAS_ROOT="c:\\opt"' >> $env:GITHUB_ENV
-        # Preserve working directory for calls into bash
-        # Without this, invoking bash will cd to the home directory
-        echo 'CHERE_INVOKING="yes"' >> $env:GITHUB_ENV
-        echo 'BASH_PATH="c:\\rtools40\\usr\\bin\\bash.exe"' >> $env:GITHUB_ENV
 
     - name: Print some Environment variable
       run: |
