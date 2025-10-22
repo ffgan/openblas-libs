@@ -1,12 +1,6 @@
 #!/bin/bash
 set -ex
 
-
-# install-rtools
-# rtools 42+ does not support 32 bits builds.
-choco install -y rtools --no-progress --force --version=4.0.0.20220206
-
-
 # Build
 git submodule update --init --recursive
 & $env:BASH_PATH -lc tools/build_openblas.sh
