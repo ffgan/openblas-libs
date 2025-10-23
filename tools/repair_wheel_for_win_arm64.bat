@@ -3,7 +3,7 @@ if "%if_bits%"=="32" (
     move /Y "%CD%\ob64_backup" "%ob_64%"
 )
 
-auditwheel repair -w %1 %2
+delvewheel repair -w %1 %2
 
 :: Rename the wheel
 @REM for %%f in (dist\*any.whl) do (

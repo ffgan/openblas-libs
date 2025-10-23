@@ -3,7 +3,7 @@ if [[ ${OS-NAME} == "windows-latest" ]];then
     # for f in dist/*.whl; 
     #     do mv $f "${f/%any.whl/$WHEEL_PLAT.whl}";
     # done
-    auditwheel repair -w $1 $2
+    delvewheel repair -w $1 $2
     exit 0
 fi
 
