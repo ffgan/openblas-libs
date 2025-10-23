@@ -72,16 +72,6 @@ jobs:
       if: ${{ contains(matrix.os, 'macos') }}
       with:
         xcode-version: '16.0'
-    - name: Set BASH_PATH
-      run: |
-        if ( "${{ matrix.os }}" -eq "windows-latest" ) {
-          echo "BASH_PATH=\"c:\\rtools40\\usr\\bin\\bash.exe\"" >> $GITHUB_ENV
-        }
-
-        if ( "${{ matrix.os }}" -eq "windows-11-arm" ) {
-          echo "BASH_PATH=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
-        }
-
 
     - name: Print some Environment variable
       run: |
@@ -166,6 +156,7 @@ jobs:
     - name: Build OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
+          Set-Item -Path env:BASH_PATH -Value "c:\\rtools40\\usr\\bin\\bash.exe"
           # Build
           & $env:BASH_PATH -lc tools/build_openblas.sh
 
@@ -183,6 +174,7 @@ jobs:
     - name: Build OpenBLAS for Windows On ARM
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
+          Set-Item -Path env:BASH_PATH -Value "C:\\Program Files\\Git\\bin\\bash.exe"
           .\tools\build_steps_win_arm64.bat 64 ${env:INTERFACE_BITS}
 
     - name: Set CIBW_BUILD
