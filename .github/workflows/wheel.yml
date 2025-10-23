@@ -17,7 +17,6 @@ env:
   # Preserve working directory for calls into bash
   # Without this, invoking bash will cd to the home directory
   CHERE_INVOKING: "yes"
-  BASH_PATH: "C:\\Program Files\\Git\\bin\\bash.exe"
 
 jobs:
   build:
@@ -109,6 +108,11 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
         echo CIBW_ENVIRONMENT_WINDOWS=$env:CIBW_ENVIRONMENT_WINDOWS
+    - name: install-rtools
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        # rtools 42+ does not support 32 bits builds.
+        choco install -y rtools --no-progress --force --version=4.0.0.20220206
 
 
     - name: Setup visual studio
@@ -157,6 +161,14 @@ jobs:
           echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}32" >> $GITHUB_ENV
         else
           echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}_${{ matrix.PLAT }}" >> $GITHUB_ENV
+        fi
+
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          echo "BASH_PATH=\"c:\\rtools40\\usr\\bin\\bash.exe\"" >> $GITHUB_ENV
+        fi
+
+        if [[ "${{ matrix.os }}" == "windows-11-arm" ]]; then
+          echo "BASH_PAT=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
         fi
 
 
