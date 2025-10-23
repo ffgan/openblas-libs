@@ -47,8 +47,8 @@ jobs:
 
 
           - { os: windows-latest, PLAT: amd64, INTERFACE64: '1', MB_ML_LIBC: win}
-          - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
-          - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
 
           - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: win}
           # - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: win}
@@ -74,11 +74,11 @@ jobs:
         xcode-version: '16.0'
     - name: Set BASH_PATH
       run: |
-        if ( "${{ matrix.os }}" == "windows-latest" ){
+        if ( "${{ matrix.os }}" -eq "windows-latest" ) {
           echo "BASH_PATH=\"c:\\rtools40\\usr\\bin\\bash.exe\"" >> $GITHUB_ENV
         }
 
-        if ( "${{ matrix.os }}" == "windows-11-arm" ){
+        if ( "${{ matrix.os }}" -eq "windows-11-arm" ) {
           echo "BASH_PATH=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
         }
 
