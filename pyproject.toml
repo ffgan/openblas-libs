@@ -67,7 +67,7 @@ test-command = "cd {package} && bash ci-test.sh"
 archs = ["x86_64", "universal2", "arm64"]
 
 [tool.cibuildwheel.windows]
-before-build = "pwsh -File  tools/build_openblas_for_win.ps1 && bash tools/build_wheel_prepare_for_win.sh"
+before-build = "pwsh -File  tools/build_openblas_for_win.ps1"
 repair-wheel-command = "bash tools/repair_for_win.sh {dest_dir} {wheel}"
 test-command = "cd {package} && bash tools/test_for_win.sh"
 archs = ["AMD64", "x86", "ARM64"]

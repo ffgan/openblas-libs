@@ -13,6 +13,8 @@ if (${env:OS-NAME} -eq "windows-latest") {
 
     # Copy
     cp for_test\test*.exe builds
+
+    & $env:BASH_PATH -lc tools/build_wheel_prepare_for_win.sh
     exit 0
 }
 
