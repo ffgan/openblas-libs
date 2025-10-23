@@ -74,11 +74,11 @@ jobs:
         xcode-version: '16.0'
     - name: Set BASH_PATH
       run: |
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+        if ( "${{ matrix.os }}" == "windows-latest" ); then
           echo "BASH_PATH=\"c:\\rtools40\\usr\\bin\\bash.exe\"" >> $GITHUB_ENV
         fi
 
-        if [[ "${{ matrix.os }}" == "windows-11-arm" ]]; then
+        if ( "${{ matrix.os }}" == "windows-11-arm" ); then
           echo "BASH_PATH=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
         fi
 
