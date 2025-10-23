@@ -1,8 +1,9 @@
 
 if [[ ${OS-NAME} == "windows-latest" ]];then
-    for f in dist/*.whl; 
-        do mv $f "${f/%any.whl/$WHEEL_PLAT.whl}";
-    done
+    # we don't need to rename the wheel for windows-latest as it have correct platform tag
+    # for f in dist/*.whl; 
+    #     do mv $f "${f/%any.whl/$WHEEL_PLAT.whl}";
+    # done
     exit 0
 fi
 

@@ -4,9 +4,9 @@ if "%if_bits%"=="32" (
 )
 
 :: Rename the wheel
-for %%f in (dist\*any.whl) do (
-    set WHEEL_FILE=dist\%%f
-    set "filename=%%~nxf"
-    set "newname=!filename:any.whl=win_arm64.whl!"
-    ren "dist\!filename!" "!newname!"
-)
+@REM for %%f in (dist\*any.whl) do (
+@REM     set WHEEL_FILE=dist\%%f
+@REM     set "filename=%%~nxf"
+@REM     set "newname=!filename:any.whl=win_arm64.whl!"
+@REM     ren "dist\!filename!" "!newname!"
+@REM )
