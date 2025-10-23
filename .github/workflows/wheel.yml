@@ -163,6 +163,28 @@ jobs:
     #   with:
     #     limit-access-to-actor: true
   
+    - name: Build OpenBLAS for Windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+          # Build
+          & $env:BASH_PATH -lc tools/build_openblas.sh
+
+          # Test
+          & $env:BASH_PATH -lc tools/build_gfortran.sh
+          echo "Static test"
+          .\for_test\test.exe
+          echo "Dynamic test"
+          .\for_test\test_dyn.exe
+
+          # Copy
+          cp for_test\test*.exe builds
+
+          & $env:BASH_PATH -lc tools/build_wheel_prepare_for_win.sh
+    - name: Build OpenBLAS for Windows On ARM
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      run: |
+          .\tools\build_steps_win_arm64.bat 64 ${env:INTERFACE_BITS}
+
     - name: Set CIBW_BUILD
       shell: bash
       run: |
