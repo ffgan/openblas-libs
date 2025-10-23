@@ -1,9 +1,8 @@
 git submodule update --init --recursive
 
-if "${OS-NAME}" -eq "windows-latest" {
+if ($env:{OS-NAME} -eq "windows-latest") {
     # Build
     & $env:BASH_PATH -lc tools/build_openblas.sh
-
 
     # Test
     & $env:BASH_PATH -lc tools/build_gfortran.sh
