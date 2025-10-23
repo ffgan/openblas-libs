@@ -47,11 +47,11 @@ jobs:
 
 
           - { os: windows-latest, PLAT: amd64, INTERFACE64: '1', MB_ML_LIBC: win}
-          # - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
-          # - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
+          - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
+          - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
 
           - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: win}
-          # - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: win}
+          - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: win}
 
     env:
       NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
@@ -170,7 +170,7 @@ jobs:
           # Copy
           cp for_test\test*.exe builds
 
-          & $env:BASH_PATH -lc tools/build_wheel_prepare_for_win.sh
+          bash tools/build_wheel_prepare_for_win.sh
     - name: Build OpenBLAS for Windows On ARM
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
