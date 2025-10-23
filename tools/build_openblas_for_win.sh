@@ -1,6 +1,6 @@
 git submodule update --init --recursive
 
-if ( ${env:OS-NAME} -eq "windows-latest" ); then
+if ( ${env:OS-NAME} -eq "windows-latest" ) {
     # Build
     & $env:BASH_PATH -lc tools/build_openblas.sh
 
@@ -16,7 +16,7 @@ if ( ${env:OS-NAME} -eq "windows-latest" ); then
 
     & $env:BASH_PATH -lc tools/build_wheel_prepare_for_win.sh
     exit 0
-fi
+}
 
 # below for windows-11-arm
 .\tools\build_steps_win_arm64.bat 64 ${env:INTERFACE_BITS}
