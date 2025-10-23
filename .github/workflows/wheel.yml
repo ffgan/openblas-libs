@@ -72,10 +72,25 @@ jobs:
       if: ${{ contains(matrix.os, 'macos') }}
       with:
         xcode-version: '16.0'
+    - name: Set BASH_PATH
+      run: |
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          echo "BASH_PATH=\"c:\\rtools40\\usr\\bin\\bash.exe\"" >> $GITHUB_ENV
+        fi
+
+        if [[ "${{ matrix.os }}" == "windows-11-arm" ]]; then
+          echo "BASH_PATH=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
+        fi
+
 
     - name: Print some Environment variable
       run: |
         echo "PLAT: ${PLAT}"
+    - name: install-rtools
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        # rtools 42+ does not support 32 bits builds.
+        choco install -y rtools --no-progress --force --version=4.0.0.20220206
 
     - name: Set env variables
       if: ${{ matrix.os == 'windows-latest' }}
@@ -108,12 +123,6 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
         echo CIBW_ENVIRONMENT_WINDOWS=$env:CIBW_ENVIRONMENT_WINDOWS
-    - name: install-rtools
-      if: ${{ matrix.os == 'windows-latest' }}
-      run: |
-        # rtools 42+ does not support 32 bits builds.
-        choco install -y rtools --no-progress --force --version=4.0.0.20220206
-
 
     - name: Setup visual studio
       if: ${{ matrix.os == 'windows-11-arm' }}
@@ -155,22 +164,12 @@ jobs:
     #     limit-access-to-actor: true
   
     - name: Set CIBW_BUILD
-      shell: bash
       run: |
         if [[ "${{ matrix.os }}" == "windows-latest" && "${{matrix.PLAT}}" == "x86" ]]; then
           echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}32" >> $GITHUB_ENV
         else
           echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}_${{ matrix.PLAT }}" >> $GITHUB_ENV
         fi
-
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          echo "BASH_PATH=\"c:\\rtools40\\usr\\bin\\bash.exe\"" >> $GITHUB_ENV
-        fi
-
-        if [[ "${{ matrix.os }}" == "windows-11-arm" ]]; then
-          echo "BASH_PATH=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
-        fi
-
 
     - name: Build and Test wheels
       uses: pypa/cibuildwheel@v3.1.4

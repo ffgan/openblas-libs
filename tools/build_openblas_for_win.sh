@@ -1,3 +1,4 @@
+set -xe
 git submodule update --init --recursive
 
 if [[ ${env:OS-NAME} -eq "windows-latest" ]]; then

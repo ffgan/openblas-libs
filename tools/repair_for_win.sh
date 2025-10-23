@@ -1,3 +1,4 @@
+set -xe
 pip install delvewheel
 
 if [[ ${OS-NAME} == "windows-latest" ]];then
