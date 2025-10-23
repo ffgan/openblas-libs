@@ -1,12 +1,11 @@
-set -xe
 git submodule update --init --recursive
 
-if [[ ${env:OS-NAME} -eq "windows-latest" ]]; then
+if ( ${env:OS-NAME} -eq "windows-latest" ); then
     # Build
-    $BASH_PATH tools/build_openblas.sh
+    & $env:BASH_PATH -lc tools/build_openblas.sh
 
     # Test
-    $BASH_PATH tools/build_gfortran.sh
+    & $env:BASH_PATH -lc tools/build_gfortran.sh
     echo "Static test"
     .\for_test\test.exe
     echo "Dynamic test"
@@ -15,7 +14,7 @@ if [[ ${env:OS-NAME} -eq "windows-latest" ]]; then
     # Copy
     cp for_test\test*.exe builds
 
-    $BASH_PATH tools/build_wheel_prepare_for_win.sh
+    & $env:BASH_PATH -lc tools/build_wheel_prepare_for_win.sh
     exit 0
 fi
 
