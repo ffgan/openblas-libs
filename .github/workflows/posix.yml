@@ -193,6 +193,12 @@ jobs:
       with:
         name: openblas-${{ matrix.os }}-${{ matrix.PLAT }}-${{ matrix.INTERFACE64 }}-${{ matrix.MB_ML_LIBC }}-${{ matrix.MB_ML_VER }}
         path: dist/openblas*.tar.gz
+    - name: Pack
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      run: |
+        cd local
+        cp -r "scipy_openblas${env:INTERFACE_BITS}" $env:INTERFACE_BITS
+        7z a ../builds/openblas-${env:PLAT}-${env:INTERFACE64}.zip -tzip $env:INTERFACE_BITS
 
     - uses: actions/upload-artifact@v4.3.0
       if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
