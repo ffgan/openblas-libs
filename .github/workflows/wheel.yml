@@ -168,7 +168,7 @@ jobs:
         fi
 
         if [[ "${{ matrix.os }}" == "windows-11-arm" ]]; then
-          echo "BASH_PAT=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
+          echo "BASH_PATH=\"C:\\Program Files\\Git\\bin\\bash.exe\"" >> $GITHUB_ENV
         fi
 
 
