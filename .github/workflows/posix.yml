@@ -195,19 +195,27 @@ jobs:
         path: dist/openblas*.tar.gz
 
     - uses: actions/upload-artifact@v4.3.0
-      if: ${{ matrix.os == 'windows-latest' }}
+      if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
       with:
         name: wheels-${{matrix.plat }}-${{ matrix.INTERFACE64 }}
         path: dist/scipy_openblas*.whl
 
     - uses: actions/upload-artifact@v4.3.0
-      if: ${{ matrix.os == 'windows-latest' }}
+      if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
       with:
         name: openblas-${{matrix.plat }}-${{ matrix.INTERFACE64 }}
         path: builds/openblas*.zip
-
+    - name: Install Anaconda client
+      if: ${{ matrix.os == 'windows-11-arm' }}
+      run: |
+        # Rust installation needed for rpds-py.
+        Invoke-WebRequest https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe -UseBasicParsing -Outfile rustup-init.exe
+        .\rustup-init.exe -y
+        $env:PATH="$env:PATH;$env:USERPROFILE\.cargo\bin"
+            pip install anaconda-client
 
     - uses: conda-incubator/setup-miniconda@v3.2.0
+      if: ${{ matrix.os != 'windows-11-arm' }}
       with:
         channels: conda-forge
         channel-priority: true

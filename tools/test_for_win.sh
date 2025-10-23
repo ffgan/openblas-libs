@@ -13,3 +13,7 @@ fi
 
 # test for windows arm64
 ./tools/test_wheel_for_win_arm64.bat
+
+python -m pip install --no-index --find-links dist scipy_openblas${env:INTERFACE_BITS}
+python -m scipy_openblas${env:INTERFACE_BITS}
+python -c "import scipy_openblas${env:INTERFACE_BITS}; print(scipy_openblas${env:INTERFACE_BITS}.get_pkg_config())"
