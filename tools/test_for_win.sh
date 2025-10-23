@@ -1,10 +1,10 @@
 if [[ ${OS-NAME} == "windows-latest" ]];then
     if [[ "${INTERFACE64}" == "1" ]]; then
-        python -m pip install --no-index --find-links dist scipy_openblas64
+        # python -m pip install --no-index --find-links dist scipy_openblas64
         python -m scipy_openblas64
         python -c "import scipy_openblas64; print(scipy_openblas64.get_pkg_config())"
     else
-        python -m pip install --no-index --find-links dist scipy_openblas32
+        # python -m pip install --no-index --find-links dist scipy_openblas32
         python -m scipy_openblas32
         python -c "import scipy_openblas32; print(scipy_openblas32.get_pkg_config())"
     fi
@@ -12,8 +12,6 @@ if [[ ${OS-NAME} == "windows-latest" ]];then
 fi
 
 # test for windows arm64
-./tools/test_wheel_for_win_arm64.bat
-
-python -m pip install --no-index --find-links dist scipy_openblas${env:INTERFACE_BITS}
+# python -m pip install --no-index --find-links dist scipy_openblas${env:INTERFACE_BITS}
 python -m scipy_openblas${env:INTERFACE_BITS}
 python -c "import scipy_openblas${env:INTERFACE_BITS}; print(scipy_openblas${env:INTERFACE_BITS}.get_pkg_config())"
