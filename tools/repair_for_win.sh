@@ -1,3 +1,5 @@
+pip install delvewheel
+
 if [[ ${OS-NAME} == "windows-latest" ]];then
     # we don't need to rename the wheel for windows-latest as it have correct platform tag
     # for f in dist/*.whl; 
