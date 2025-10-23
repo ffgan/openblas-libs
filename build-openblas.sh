@@ -70,6 +70,13 @@ if [[ "$NIGHTLY" = "true" ]]; then
     clean_code $REPO_DIR develop
     echo "------ BUILD LIB --------"
     build_lib "$PLAT" "$INTERFACE64" "1"
+elif [[  ${TRAVIS_EVENT_TYPE} == "cron" ]];then
+    echo "------ CLEAN CODE --------"
+    clean_code $REPO_DIR develop
+    echo "------ BUILD LIB --------"
+    build_lib "$PLAT" "$INTERFACE64" 1
+    version=$(cd OpenBLAS && git describe --tags --abbrev=8 | sed -e "s/^v\(.*\)-g.*/\1/" | sed -e "s/-/./g")
+    sed -e "s/^version = .*/version = \"${version}\"/" -i.bak pyproject.toml
 else
     echo "------ CLEAN CODE --------"
     clean_code $REPO_DIR $OPENBLAS_COMMIT

@@ -35,26 +35,14 @@ jobs:
         - INTERFACE64=1
         - MB_ML_VER=2014
 
-before_install:
-    - source tools/build_steps.sh
-    - before_build
-
 install:
     # Maybe get and clean and patch source
     - |
-      if [ ${TRAVIS_EVENT_TYPE} == "cron" ]; then
-        clean_code_local $REPO_DIR develop
-      else
-        clean_code_local $REPO_DIR $OPENBLAS_COMMIT
-      fi
+      python3 -m pip install cibuildwheel==3.2.1
       echo done install step
 
 script:
-    # Build library and collect into libs subdirectory
-    - travis_wait 30 build_on_travis
-    - libc=${MB_ML_LIBC:-manylinux}
-    - docker_image=quay.io/pypa/${libc}${MB_ML_VER}_${PLAT}
-    - docker run --rm -e INTERFACE64="${INTERFACE64}" -e MB_ML_LIBC="${MB_ML_LIBC}" -v $(pwd):/openblas "${docker_image}" /bin/bash -xe /openblas/tools/build_wheel.sh
+    - python3 -m cibuildwheel --output-dir dist
 
 after_success:
     - set +ex
