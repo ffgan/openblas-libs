@@ -2,12 +2,12 @@ name: build-wheel
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch: null
-  schedule:
-    - cron: '0 0 * * 0'
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  # workflow_dispatch: null
+  # schedule:
+  #   - cron: '0 0 * * 0'
 
 env:
   OPENBLAS_COMMIT: "v0.3.30"
@@ -24,33 +24,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
           - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
 
-          - { os: windows-latest, PLAT: amd64, INTERFACE64: '1', MB_ML_LIBC: win}
-          - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
-          - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: amd64, INTERFACE64: '1', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: amd64, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: x86, INTERFACE64: '0', MB_ML_LIBC: win}
 
-          - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: win}
-          - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: win}
+          # - { os: windows-11-arm, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: win}
 
     env:
       NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}

@@ -1,0 +1,2597 @@
+diff --git a/.cirrus.yml b/.cirrus.yml
+index da3236673..4e0092772 100644
+--- a/.cirrus.yml
++++ b/.cirrus.yml
+@@ -127,7 +127,7 @@ task:
+ FreeBSD_task:
+   name: FreeBSD-gcc
+   freebsd_instance:
+-    image_family: freebsd-14-2
++    image_family: freebsd-14-3
+   install_script:
+   - pkg update -f && pkg upgrade -y && pkg install -y gmake gcc
+   compile_script:
+@@ -138,7 +138,7 @@ FreeBSD_task:
+ FreeBSD_task:
+   name: freebsd-gcc-ilp64
+   freebsd_instance:
+-    image_family: freebsd-14-2
++    image_family: freebsd-14-3
+   install_script:
+   - pkg update -f && pkg upgrade -y && pkg install -y gmake gcc
+   compile_script:
+@@ -148,7 +148,7 @@ FreeBSD_task:
+ FreeBSD_task:
+   name: FreeBSD-clang-openmp
+   freebsd_instance:
+-    image_family: freebsd-14-2
++    image_family: freebsd-14-3
+   install_script:
+   - pkg update -f && pkg upgrade -y && pkg install -y gmake gcc 
+   - ln -s /usr/local/lib/gcc13/libgfortran.so.5.0.0 /usr/lib/libgfortran.so
+diff --git a/.github/workflows/riscv64_vector.yml b/.github/workflows/riscv64_vector.yml
+index 5dd74b9dc..d83d786c6 100644
+--- a/.github/workflows/riscv64_vector.yml
++++ b/.github/workflows/riscv64_vector.yml
+@@ -26,7 +26,7 @@ jobs:
+             opts: TARGET=RISCV64_ZVL128B BINARY=64 ARCH=riscv64
+             qemu_cpu: rv64,g=true,c=true,v=true,vext_spec=v1.0,vlen=128,elen=64
+           - target: RISCV64_ZVL256B
+-            opts: TARGET=RISCV64_ZVL256B BINARY=64 ARCH=riscv64
++            opts: TARGET=RISCV64_ZVL256B BINARY=64 ARCH=riscv64 BUILD_BFLOAT16=1 BUILD_HFLOAT16=1
+             qemu_cpu: rv64,g=true,c=true,v=true,vext_spec=v1.0,vlen=256,elen=64
+           - target: DYNAMIC_ARCH=1
+             opts: TARGET=RISCV64_GENERIC BINARY=64 ARCH=riscv64 DYNAMIC_ARCH=1
+@@ -40,7 +40,7 @@ jobs:
+         run: |
+           sudo apt-get update
+           sudo apt-get install autoconf automake autotools-dev ninja-build make \
+-          libgomp1-riscv64-cross ccache
++          libgomp1-riscv64-cross ccache qemu-kvm
+           wget ${riscv_gnu_toolchain}/${riscv_gnu_toolchain_nightly_download_path}
+           tar -xvf $(basename ${riscv_gnu_toolchain_nightly_download_path}) -C /opt
+ 
+diff --git a/.gitignore b/.gitignore
+index dcbc73dc8..a6ee82468 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -80,6 +80,7 @@ test/SBLAT3_3M.SUMM
+ test/ZBLAT2.SUMM
+ test/ZBLAT3.SUMM
+ test/ZBLAT3_3M.SUMM
++test/SHBLAT2.SUMM
+ test/SHBLAT3.SUMM
+ test/SBBLAT2.SUMM
+ test/SBBLAT3.SUMM
+@@ -98,6 +99,7 @@ test/sblat2
+ test/sblat3
+ test/sblat3_3m
+ test/test_shgemm
++test/test_shgemv
+ test/test_sbgemm
+ test/test_sbgemv
+ test/test_bgemm
+diff --git a/azure-pipelines.yml b/azure-pipelines.yml
+index 21e0b9693..b0f7a2176 100644
+--- a/azure-pipelines.yml
++++ b/azure-pipelines.yml
+@@ -95,7 +95,7 @@ jobs:
+      vmImage: 'windows-latest'
+   steps:   
+   - script: |
+-      mingw32-make CC=gcc FC=gfortran DYNAMIC_ARCH=1 DYNAMIC_LIST="SANDYBRIDGE"
++      mingw32-make CC=gcc NOLAPACK=1 DYNAMIC_ARCH=1 DYNAMIC_LIST="SANDYBRIDGE"
+ 
+ - job: Windows_clang_cmake
+   pool:
+@@ -201,7 +201,7 @@ jobs:
+   - script: |
+       brew update
+       brew install llvm libomp
+-      make TARGET=CORE2 USE_OPENMP=1 DYNAMIC_ARCH=1 CC=/usr/local/opt/llvm/bin/clang NOFORTRAN=1
++      make TARGET=CORE2 USE_OPENMP=1 DYNAMIC_ARCH=1 DYNAMIC_LIST='NEHALEM HASWELL SKYLAKEX' CC=/usr/local/opt/llvm/bin/clang NOFORTRAN=1
+ 
+ - job: OSX_OpenMP_Clang_cmake
+   pool:
+@@ -215,7 +215,7 @@ jobs:
+       brew install llvm libomp
+       mkdir build
+       cd build
+-      cmake -DTARGET=CORE2 -DUSE_OPENMP=1 -DINTERFACE64=1 -DDYNAMIC_ARCH=1 -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang -DNOFORTRAN=1 -DNO_AVX512=1 ..
++      cmake -DTARGET=CORE2 -DUSE_OPENMP=1 -DINTERFACE64=1 -DDYNAMIC_ARCH=1 -DDYNAMIC_LIST='NEHALEM HASWELL SKYLAKEX' -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang -DNOFORTRAN=1 -DNO_AVX512=1 ..
+       make
+       ctest
+       
+diff --git a/cmake/cc.cmake b/cmake/cc.cmake
+index b3d9e9dc7..ccd7fc5bd 100644
+--- a/cmake/cc.cmake
++++ b/cmake/cc.cmake
+@@ -213,7 +213,7 @@ endif ()
+ 
+ if (${CORE} STREQUAL A64FX)
+   if (NOT DYNAMIC_ARCH)
+-    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVC" AND NOT NO_SVE)
++    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC" AND NOT NO_SVE)
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=a64fx")
+     elseif (${GCC_VERSION} VERSION_GREATER 11.0 OR ${GCC_VERSION} VERSION_EQUAL 11.0)
+       set (CCOMMON_OPT  "${CCOMMON_OPT} -march=armv8.2-a+sve -mtune=a64fx")
+@@ -227,7 +227,7 @@ if (${CORE} STREQUAL NEOVERSEV2)
+ 	if (NOT DYNAMIC_ARCH)
+ 		if (${CMAKE_C_COMPILER_ID} STREQUAL "PGI" AND NOT NO_SVE)
+ 			set (CCOMMON_OPT  "${CCOMMON_OPT} -Msve_intrinsics -march=armv8.5-a+sve+sve2+bf16 -mtune=neoverse-v2")
+-		elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVC" AND NOT NO_SVE)
++		elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC" AND NOT NO_SVE)
+ 			set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=neoverse-v2")
+ 		else ()
+ 			if (${GCC_VERSION} VERSION_GREATER 13.0 OR ${GCC_VERSION} VERSION_EQUAL 13.0)
+@@ -245,7 +245,7 @@ if (${CORE} STREQUAL NEOVERSEN2)
+   if (NOT DYNAMIC_ARCH)
+     if (${CMAKE_C_COMPILER_ID} STREQUAL "PGI" AND NOT NO_SVE)
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -Msve_intrinsics -march=armv8.5-a+sve+sve2+bf16 -mtune=neoverse-n2")
+-    elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVC" AND NOT NO_SVE)
++    elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC" AND NOT NO_SVE)
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=neoverse-v2")
+     else ()
+       if (${GCC_VERSION} VERSION_GREATER 11.1 OR ${GCC_VERSION} VERSION_EQUAL 11.1)
+@@ -261,7 +261,7 @@ if (${CORE} STREQUAL NEOVERSEV1)
+   if (NOT DYNAMIC_ARCH)
+     if (${CMAKE_C_COMPILER_ID} STREQUAL "PGI" AND NOT NO_SVE)
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -Msve_intrinsics -march=armv8.4-a+sve+bf16 -mtune=neoverse-v1")
+-    elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVC" AND NOT NO_SVE)
++    elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC" AND NOT NO_SVE)
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=neoverse-v1")
+     else ()
+       if (${GCC_VERSION} VERSION_GREATER 10.4 OR ${GCC_VERSION} VERSION_EQUAL 10.4)
+@@ -275,7 +275,7 @@ endif ()
+ 
+ if (${CORE} STREQUAL NEOVERSEN1)
+   if (NOT DYNAMIC_ARCH)
+-    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVC" AND NOT NO_SVE)
++    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC" AND NOT NO_SVE)
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=neoverse-n1")
+     elseif (${GCC_VERSION} VERSION_GREATER 9.4 OR ${GCC_VERSION} VERSION_EQUAL 9.4)
+       set (CCOMMON_OPT  "${CCOMMON_OPT} -march=armv8.2-a -mtune=neoverse-n1")
+@@ -287,7 +287,7 @@ endif ()
+ 
+ if (${CORE} STREQUAL AMPEREONE)
+   if (NOT DYNAMIC_ARCH)
+-    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVC")
++    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC")
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=neoverse-n1")
+     elseif (${GCC_VERSION} VERSION_GREATER 12.1)
+       set (CCOMMON_OPT  "${CCOMMON_OPT} -march=armv8.6-a+crypto+crc+fp16+sha3+rng -mtune=ampereone")
+@@ -301,7 +301,7 @@ if (${CORE} STREQUAL ARMV8SVE)
+   if (NOT DYNAMIC_ARCH)
+     if (${CMAKE_C_COMPILER_ID} STREQUAL "PGI" AND NOT NO_SVE)
+ 	set (CCOMMON_OPT  "${CCOMMON_OPT} -Msve_intrinsics -march=armv8-a+sve")
+-    elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVC" AND NOT NO_SVE)
++    elseif (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC" AND NOT NO_SVE)
+ 	    set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=host")
+     else ()
+       set (CCOMMON_OPT "${CCOMMON_OPT} -march=armv8-a+sve")
+@@ -311,7 +311,7 @@ endif ()
+ 
+ if (${CORE} STREQUAL ARMV9SME)
+   if (NOT DYNAMIC_ARCH)
+-    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVC" AND NOT NO_SVE)
++    if (${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC" AND NOT NO_SVE)
+ 	    set (CCOMMON_OPT  "${CCOMMON_OPT} -tp=host")
+     else ()
+     set (CCOMMON_OPT "${CCOMMON_OPT} -march=armv9-a+sme")
+@@ -391,6 +391,30 @@ if (${CORE} STREQUAL PPCG4)
+   endif ()
+ endif ()
+ 
++
++if ((${CORE} STREQUAL RISCV64_ZVL128B) OR (${CORE} STREQUAL RISCV64_ZVL256B))
++  set (RISCV64_OPT "rv64imafdcv")
++  if (BUILD_BFLOAT16)
++    set (RISCV64_OPT "${RISCV64_OPT}_zvfbfwma")
++  endif()
++  if (BUILD_HFLOAT16)
++    set (RISCV64_OPT "${RISCV64_OPT}_zvfh_zfh")
++  endif()
++  if (${CORE} STREQUAL RISCV64_ZVL256B)
++    set (CCOMMON_OPT "${CCOMMON_OPT} -march=${RISCV64_OPT}_zvl256b -mabi=lp64d")
++  endif()
++  if (${CORE} STREQUAL RISCV64_ZVL128B)
++    set (CCOMMON_OPT "${CCOMMON_OPT} -march=${RISCV64_OPT}_zvl128b -mabi=lp64d")
++  endif()
++endif()
++if (${CORE} STREQUAL RISCV64_GENERIC)
++  set (CCOMMON_OPT "${CCOMMON_OPT} -march=rv64imafdc -mabi=lp64d")
++endif()
++if (${CORE} STREQUAL x280)
++  set (CCOMMON_OPT "${CCOMMON_OPT} -march=rv64imafdcv_zba_zbb_zfh_zvl512b -mabi=lp64d")
++endif()
++
++
+ if (NOT DYNAMIC_ARCH)
+ 	if (HAVE_AVX2)
+         set (CCOMMON_OPT  "${CCOMMON_OPT} -mavx2")
+diff --git a/cmake/kernel.cmake b/cmake/kernel.cmake
+index 6d752ac51..3b9e3849d 100644
+--- a/cmake/kernel.cmake
++++ b/cmake/kernel.cmake
+@@ -175,6 +175,10 @@ if (BUILD_BFLOAT16)
+   SetFallback(SBGEMVNKERNEL ../x86_64/sbgemv_n.c)
+   SetFallback(SBGEMVTKERNEL ../x86_64/sbgemv_t.c)
+ endif ()
++if (BUILD_HFLOAT16)
++  SetFallback(SHGEMVNKERNEL ../generic/gemv_n.c)
++  SetFallback(SHGEMVTKERNEL ../generic/gemv_t.c)
++endif ()
+ endmacro ()
+ 
+ macro(SetDefaultL2)
+@@ -228,6 +232,10 @@ if (BUILD_BFLOAT16)
+   SetFallback(BGEMVTKERNEL ../generic/gemv_t.c)
+   SetFallback(SBGEMVNKERNEL ../x86_64/sbgemv_n.c)
+   SetFallback(SBGEMVTKERNEL ../x86_64/sbgemv_t.c)
++endif ()
++if (BUILD_HFLOAT16)
++  SetFallback(SHGEMVNKERNEL ../generic/gemv_n.c)
++  SetFallback(SHGEMVTKERNEL ../generic/gemv_t.c)
+   SetFallback(SHGERKERNEL ../generic/ger.c)
+ endif ()
+ endmacro ()
+@@ -260,5 +268,16 @@ if (BUILD_BFLOAT16)
+   SetFallback(SBGEMMONCOPYOBJ sbgemm_oncopy.o)
+   SetFallback(SBGEMMOTCOPYOBJ sbgemm_otcopy.o)
+ endif ()
+-
++if (BUILD_HFLOAT16)
++  SetFallback(SHGEMMKERNEL ../generic/gemmkernel_2x2.c)
++  SetFallback(SHGEMM_BETA  ../generic/gemm_beta.c)
++  SetFallback(SHGEMMINCOPY ../generic/gemm_ncopy_2.c)
++  SetFallback(SHGEMMITCOPY ../generic/gemm_tcopy_2.c)
++  SetFallback(SHGEMMONCOPY ../generic/gemm_ncopy_2.c)
++  SetFallback(SHGEMMOTCOPY ../generic/gemm_tcopy_2.c)
++  SetFallback(SHGEMMINCOPYOBJ shgemm_incopy.o)
++  SetFallback(SHGEMMITCOPYOBJ shgemm_itcopy.o)
++  SetFallback(SHGEMMONCOPYOBJ shgemm_oncopy.o)
++  SetFallback(SHGEMMOTCOPYOBJ shgemm_otcopy.o)
++endif ()
+ endmacro ()
+diff --git a/cmake/system.cmake b/cmake/system.cmake
+index 8dded3c21..f5f8952fb 100644
+--- a/cmake/system.cmake
++++ b/cmake/system.cmake
+@@ -381,6 +381,28 @@ if (${TARGET} STREQUAL NEOVERSEV1)
+     endif()
+   endif()
+ 
++  if ((${TARGET} STREQUAL RISCV64_ZVL128B) OR (${TARGET} STREQUAL RISCV64_ZVL256B))
++    set (RISCV64_OPT "rv64imafdcv")
++    if (BUILD_BFLOAT16)
++      set (RISCV64_OPT "${RISCV64_OPT}_zvfbfwma")
++    endif()
++    if (BUILD_HFLOAT16)
++      set (RISCV64_OPT "${RISCV64_OPT}_zvfh_zfh")
++    endif()
++    if (${TARGET} STREQUAL RISCV64_ZVL256B)
++      set (KERNEL_DEFINITIONS "${KERNEL_DEFINITIONS} -march=${RISCV64_OPT}_zvl256b -mabi=lp64d")
++    endif()
++    if (${TARGET} STREQUAL RISCV64_ZVL128B)
++      set (KERNEL_DEFINITIONS "${KERNEL_DEFINITIONS} -march=${RISCV64_OPT}_zvl128b -mabi=lp64d")
++    endif()
++  endif()
++  if (${TARGET} STREQUAL RISCV64_GENERIC)
++      set (KERNEL_DEFINITIONS "${KERNEL_DEFINITIONS} -march=rv64imafdc -mabi=lp64d")
++    endif()
++    if (${TARGET} STREQUAL x280)
++      set (KERNEL_DEFINITIONS "${KERNEL_DEFINITIONS} -march=rv64imafdcv_zba_zbb_zfh_zvl512b -mabi=lp64d")
++    endif()
++
+ endif()
+ 
+ if (DEFINED BINARY)
+diff --git a/cmake/utils.cmake b/cmake/utils.cmake
+index 35843a326..e717233c1 100644
+--- a/cmake/utils.cmake
++++ b/cmake/utils.cmake
+@@ -375,9 +375,12 @@ function(GenerateNamedObjects sources_in)
+       if (NOT no_float_type)
+         string(SUBSTRING ${float_type} 0 1 float_char)
+         string(TOLOWER ${float_char} float_char)
+-	if (${float_type} STREQUAL "BFLOAT16" AND NOT "${defines_in}" MATCHES "BGEM")
+-		set (float_char "sb")
+-	endif ()
++        if (${float_type} STREQUAL "BFLOAT16" AND NOT "${defines_in}" MATCHES "BGEM")
++          set (float_char "sb")
++        endif ()
++        if (${float_type} STREQUAL "HFLOAT16" AND NOT "${defines_in}" MATCHES "HGEM")
++          set (float_char "sh")
++        endif ()
+       endif ()
+ 
+       if (NOT name_in)
+diff --git a/common_interface.h b/common_interface.h
+index 945b6c8a1..380ce8d08 100644
+--- a/common_interface.h
++++ b/common_interface.h
+@@ -261,6 +261,8 @@ void BLASFUNC(bgemv)(char *, blasint *, blasint *, bfloat16  *, bfloat16 *, blas
+             bfloat16  *, blasint *, bfloat16  *, bfloat16  *, blasint *);
+ void BLASFUNC(sbgemv)(char *, blasint *, blasint *, float  *, bfloat16 *, blasint *,
+             bfloat16  *, blasint *, float  *, float  *, blasint *);
++void BLASFUNC(shgemv)(char *, blasint *, blasint *, float  *, hfloat16 *, blasint *,
++            hfloat16  *, blasint *, float  *, float  *, blasint *);
+ void BLASFUNC(sgemv)(char *, blasint *, blasint *, float  *, float  *, blasint *,
+ 		    float  *, blasint *, float  *, float  *, blasint *);
+ void BLASFUNC(dgemv)(char *, blasint *, blasint *, double *, double *, blasint *,
+diff --git a/common_level2.h b/common_level2.h
+index eea5e43f3..492787cf7 100644
+--- a/common_level2.h
++++ b/common_level2.h
+@@ -54,6 +54,10 @@ int sbgemv_n(BLASLONG, BLASLONG, float, bfloat16 *, BLASLONG, bfloat16 *, BLASLO
+ int sbgemv_t(BLASLONG, BLASLONG, float, bfloat16 *, BLASLONG, bfloat16 *, BLASLONG, float, float *, BLASLONG);
+ int sbgemv_thread_n(BLASLONG, BLASLONG, float, bfloat16 *, BLASLONG, bfloat16 *, BLASLONG, float, float *, BLASLONG, int);
+ int sbgemv_thread_t(BLASLONG, BLASLONG, float, bfloat16 *, BLASLONG, bfloat16 *, BLASLONG, float, float *, BLASLONG, int);
++int shgemv_n(BLASLONG, BLASLONG, float, hfloat16 *, BLASLONG, hfloat16 *, BLASLONG, float, float *, BLASLONG);
++int shgemv_t(BLASLONG, BLASLONG, float, hfloat16 *, BLASLONG, hfloat16 *, BLASLONG, float, float *, BLASLONG);
++int shgemv_thread_n(BLASLONG, BLASLONG, float, hfloat16 *, BLASLONG, hfloat16 *, BLASLONG, float, float *, BLASLONG, int);
++int shgemv_thread_t(BLASLONG, BLASLONG, float, hfloat16 *, BLASLONG, hfloat16 *, BLASLONG, float, float *, BLASLONG, int);
+ int sger_k (BLASLONG, BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG, float *, BLASLONG, float *);
+ int dger_k (BLASLONG, BLASLONG, BLASLONG, double, double *, BLASLONG, double *, BLASLONG, double *, BLASLONG, double *);
+ int qger_k (BLASLONG, BLASLONG, BLASLONG, xdouble, xdouble *, BLASLONG, xdouble *, BLASLONG, xdouble *, BLASLONG, xdouble *);
+diff --git a/common_level3.h b/common_level3.h
+index 19d7d120f..ba368bf7d 100644
+--- a/common_level3.h
++++ b/common_level3.h
+@@ -72,6 +72,23 @@ void ssymm_direct_alpha_betaLL(BLASLONG M, BLASLONG N,
+ 	float beta,
+ 	float * R, BLASLONG strideR);
+ 
++void strmm_direct_LNUN(BLASLONG M, BLASLONG N,
++	float alpha,
++	float * A, BLASLONG strideA,
++	float * B, BLASLONG strideB);
++void strmm_direct_LNLN(BLASLONG M, BLASLONG N,
++	float alpha,
++	float * A, BLASLONG strideA,
++	float * B, BLASLONG strideB);
++void strmm_direct_LTUN(BLASLONG M, BLASLONG N,
++	float alpha,
++	float * A, BLASLONG strideA,
++	float * B, BLASLONG strideB);
++void strmm_direct_LTLN(BLASLONG M, BLASLONG N,
++	float alpha,
++	float * A, BLASLONG strideA,
++	float * B, BLASLONG strideB);
++
+ int sgemm_direct_performant(BLASLONG M, BLASLONG N, BLASLONG K);
+ 
+ int shgemm_beta(BLASLONG, BLASLONG, BLASLONG, float,
+diff --git a/common_macro.h b/common_macro.h
+index f9c22089b..745643fa8 100644
+--- a/common_macro.h
++++ b/common_macro.h
+@@ -703,6 +703,9 @@
+ #define GEMM_THREAD_RC   SHGEMM_THREAD_NT
+ #define GEMM_THREAD_RR   SHGEMM_THREAD_NN
+ 
++#define SCAL_K        SSCAL_K
++#define GEMV_N        SHGEMV_N_K
++#define GEMV_T        SHGEMV_T_K
+ 
+ #elif defined(BFLOAT16) && defined(BGEMM)
+ #define SCAL_K        BSCAL_K
+diff --git a/common_param.h b/common_param.h
+index 54bb896fc..a7564904b 100644
+--- a/common_param.h
++++ b/common_param.h
+@@ -60,7 +60,8 @@ int (*shgemm_itcopy   )(BLASLONG, BLASLONG, hfloat16 *, BLASLONG, hfloat16 *);
+ int (*shgemm_oncopy   )(BLASLONG, BLASLONG, hfloat16 *, BLASLONG, hfloat16 *);
+ int (*shgemm_otcopy   )(BLASLONG, BLASLONG, hfloat16 *, BLASLONG, hfloat16 *);
+ 
+-
++int (*shgemv_n) (BLASLONG, BLASLONG, float, hfloat16 *, BLASLONG, hfloat16 *, BLASLONG, float, float *, BLASLONG);
++int (*shgemv_t) (BLASLONG, BLASLONG, float, hfloat16 *, BLASLONG, hfloat16 *, BLASLONG, float, float *, BLASLONG);
+ #endif
+ 
+ 
+@@ -259,6 +260,10 @@ int (*shgemm_otcopy   )(BLASLONG, BLASLONG, hfloat16 *, BLASLONG, hfloat16 *);
+   void (*sgemm_direct_alpha_beta) (BLASLONG, BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG, float, float * , BLASLONG);
+   void (*ssymm_direct_alpha_betaLU) (BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG, float, float * , BLASLONG);
+   void (*ssymm_direct_alpha_betaLL) (BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG, float, float * , BLASLONG);
++  void (*strmm_direct_LNUN) (BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG);
++  void (*strmm_direct_LNLN) (BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG);
++  void (*strmm_direct_LTUN) (BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG);
++  void (*strmm_direct_LTLN) (BLASLONG, BLASLONG, float, float *, BLASLONG, float *, BLASLONG);
+ #endif
+ 
+   
+diff --git a/common_s.h b/common_s.h
+index a73b0082f..8f5518055 100644
+--- a/common_s.h
++++ b/common_s.h
+@@ -52,6 +52,10 @@
+ #define  SGEMM_DIRECT_ALPHA_BETA		sgemm_direct_alpha_beta
+ #define  SSYMM_DIRECT_ALPHA_BETA_LU		ssymm_direct_alpha_betaLU
+ #define  SSYMM_DIRECT_ALPHA_BETA_LL		ssymm_direct_alpha_betaLL
++#define  STRMM_DIRECT_LNUN		strmm_direct_LNUN
++#define  STRMM_DIRECT_LNLN		strmm_direct_LNLN
++#define  STRMM_DIRECT_LTUN		strmm_direct_LTUN
++#define  STRMM_DIRECT_LTLN		strmm_direct_LTLN
+ 
+ #define	SGEMM_ONCOPY		sgemm_oncopy
+ #define	SGEMM_OTCOPY		sgemm_otcopy
+@@ -224,6 +228,10 @@
+ #define  SGEMM_DIRECT_ALPHA_BETA		gotoblas -> sgemm_direct_alpha_beta
+ #define  SSYMM_DIRECT_ALPHA_BETA_LU		gotoblas -> ssymm_direct_alpha_betaLU
+ #define  SSYMM_DIRECT_ALPHA_BETA_LL		gotoblas -> ssymm_direct_alpha_betaLL
++#define  STRMM_DIRECT_LNUN		gotoblas -> strmm_direct_LNUN
++#define  STRMM_DIRECT_LNLN		gotoblas -> strmm_direct_LNLN
++#define  STRMM_DIRECT_LTUN		gotoblas -> strmm_direct_LTUN
++#define  STRMM_DIRECT_LTLN		gotoblas -> strmm_direct_LTLN
+ #endif
+ 
+ #define	SGEMM_ONCOPY		gotoblas -> sgemm_oncopy
+diff --git a/common_sh.h b/common_sh.h
+index 69734d1dc..99dbb6518 100644
+--- a/common_sh.h
++++ b/common_sh.h
+@@ -1,3 +1,31 @@
++/***************************************************************************
++ * Copyright (c) 2025, The OpenBLAS Project
++ * All rights reserved.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ * 1. Redistributions of source code must retain the above copyright
++ * notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ * notice, this list of conditions and the following disclaimer in
++ * the documentation and/or other materials provided with the
++ * distribution.
++ * 3. Neither the name of the OpenBLAS project nor the names of
++ * its contributors may be used to endorse or promote products
++ * derived from this software without specific prior written permission.
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ * *****************************************************************************/
++
+ #ifndef COMMON_SH_H
+ #define COMMON_SH_H
+ 
+@@ -17,6 +45,9 @@
+ #define SHGEMM_BETA		    shgemm_beta
+ #define SHGEMM_KERNEL       shgemm_kernel
+ 
++#define SHGEMV_N_K      shgemv_n
++#define SHGEMV_T_K      shgemv_t
++
+ 
+ #else // #DYNAMIC_ARCH
+ 
+@@ -32,6 +63,10 @@
+ 
+ #define SHGEMM_BETA		gotoblas -> shgemm_beta
+ #define SHGEMM_KERNEL		gotoblas -> shgemm_kernel
++
++#define SHGEMV_N_K      gotoblas->shgemv_n
++#define SHGEMV_T_K      gotoblas->shgemv_t
++
+ #endif // #DYNAMIC_ARCH
+ 
+ #define SHGEMM_NN        shgemm_nn
+diff --git a/driver/level2/CMakeLists.txt b/driver/level2/CMakeLists.txt
+index c52b461a7..a0360f7e1 100644
+--- a/driver/level2/CMakeLists.txt
++++ b/driver/level2/CMakeLists.txt
+@@ -202,6 +202,15 @@ if (BUILD_BFLOAT16)
+   if (USE_THREAD)
+     GenerateNamedObjects("sbgemv_thread.c" "" "gemv_thread_n" false "" "" false "BFLOAT16")
+     GenerateNamedObjects("sbgemv_thread.c" "TRANSA" "gemv_thread_t" false "" "" false "BFLOAT16")
++    GenerateNamedObjects("sbgemv_thread.c" "BGEMM;BFLOAT16" "bgemv_thread_n" false "" "" true "")
++    GenerateNamedObjects("sbgemv_thread.c" "BGEMM;BFLOAT16;TRANSA" "bgemv_thread_t" false "" "" true "")
++  endif ()
++endif ()
++
++if (BUILD_HFLOAT16)
++  if (USE_THREAD)
++    GenerateNamedObjects("sbgemv_thread.c" "" "gemv_thread_n" false "" "" false "HFLOAT16")
++    GenerateNamedObjects("sbgemv_thread.c" "TRANSA" "gemv_thread_t" false "" "" false "HFLOAT16")
+   endif ()
+ endif ()
+ 
+diff --git a/driver/level2/Makefile b/driver/level2/Makefile
+index 3f3731d3f..d50e70bcd 100644
+--- a/driver/level2/Makefile
++++ b/driver/level2/Makefile
+@@ -450,6 +450,12 @@ XBLASOBJS   += \
+ 	xtbmv_thread_CUU.$(SUFFIX)	xtbmv_thread_CUN.$(SUFFIX) \
+ 	xtbmv_thread_CLU.$(SUFFIX)	xtbmv_thread_CLN.$(SUFFIX)
+ 
++
++ifeq ($(BUILD_HFLOAT16),1)
++SHBLASOBJS     += \
++        shgemv_thread_n$(TSUFFIX).$(SUFFIX) \
++        shgemv_thread_t$(TSUFFIX).$(SUFFIX)
++endif
+ ifeq ($(BUILD_BFLOAT16),1)
+ BBLASOBJS      += \
+         bgemv_thread_n$(TSUFFIX).$(SUFFIX) \
+@@ -3737,6 +3743,13 @@ xtrsv_CUU.$(SUFFIX)  xtrsv_CUU.$(PSUFFIX)  : ztrsv_L.c ../../param.h
+ xtrsv_CUN.$(SUFFIX)  xtrsv_CUN.$(PSUFFIX)  : ztrsv_L.c ../../param.h
+ 	$(CC) -c $(CFLAGS) -DXDOUBLE -DCOMPLEX -DTRANSA=4 -UUNIT $< -o $(@F)
+ 
++ifeq ($(BUILD_HFLOAT16),1)
++shgemv_thread_n.$(SUFFIX) shgemv_thread_n.$(PSUFFIX) : sbgemv_thread.c ../../common.h
++	$(CC) -c $(CFLAGS) -UCOMPLEX -UDOUBLE  -UTRANSA -UCONJ -UXCONJ $< -o $(@F)
++shgemv_thread_t.$(SUFFIX) shgemv_thread_t.$(PSUFFIX) : sbgemv_thread.c ../../common.h
++	$(CC) -c $(CFLAGS) -UCOMPLEX -UDOUBLE  -DTRANSA -UCONJ -UXCONJ $< -o $(@F)
++endif
++
+ ifeq ($(BUILD_BFLOAT16),1)
+ bgemv_thread_n.$(SUFFIX) bgemv_thread_n.$(PSUFFIX) : sbgemv_thread.c ../../common.h
+ 	$(CC) -c $(CFLAGS) -DBGEMM -UCOMPLEX -UDOUBLE  -UTRANSA -UCONJ -UXCONJ $< -o $(@F)
+diff --git a/driver/level3/CMakeLists.txt b/driver/level3/CMakeLists.txt
+index be2ba23c2..468628af2 100644
+--- a/driver/level3/CMakeLists.txt
++++ b/driver/level3/CMakeLists.txt
+@@ -17,6 +17,7 @@ foreach (GEMM_DEFINE ${GEMM_DEFINES})
+     GenerateNamedObjects("gemm.c" "${GEMM_DEFINE};BGEMM" "gemm_${GEMM_DEFINE_LC}" 0 "" "" false "BFLOAT16")
+     if (USE_THREAD AND NOT USE_SIMPLE_THREADED_LEVEL3)
+       GenerateNamedObjects("gemm.c" "${GEMM_DEFINE};THREADED_LEVEL3" "gemm_thread_${GEMM_DEFINE_LC}" 0 "" "" false "BFLOAT16")
++      GenerateNamedObjects("gemm.c" "${GEMM_DEFINE};THREADED_LEVEL3;BGEMM" "gemm_thread_${GEMM_DEFINE_LC}" 0 "" "" false "BFLOAT16")
+     endif ()
+   endif ()
+   if (BUILD_HFLOAT16)
+diff --git a/exports/gensymbol b/exports/gensymbol
+index 40e13e623..01c930ea9 100755
+--- a/exports/gensymbol
++++ b/exports/gensymbol
+@@ -80,7 +80,7 @@ blasobjsz="
+ 
+ blasobjs="lsame xerbla"
+ bfblasobjs="bgemm bgemv sbgemm sbgemmt sbgemmtr sbgemv sbdot sbstobf16 sbdtobf16 sbf16tos dbf16tod"
+-hfblasobjs="shgemm"
++hfblasobjs="shgemm shgemv"
+ cblasobjsc="
+     cblas_caxpy cblas_ccopy cblas_cdotc cblas_cdotu cblas_cgbmv cblas_cgemm cblas_cgemv
+     cblas_cgerc cblas_cgeru cblas_chbmv cblas_chemm cblas_chemv cblas_cher2 cblas_cher2k
+diff --git a/exports/gensymbol.pl b/exports/gensymbol.pl
+index 3447a4e51..bdfa69b27 100644
+--- a/exports/gensymbol.pl
++++ b/exports/gensymbol.pl
+@@ -80,7 +80,7 @@
+ 
+ @blasobjs = (lsame, xerbla);
+ @bfblasobjs = (bgemm, bgemv, sbgemm, sbgemmt, sbgemmtr, sbgemv, sbdot, sbstobf16, sbdtobf16, sbf16tos, dbf16tod);
+-@hfblasobjs = (shgemm);
++@hfblasobjs = (shgemm, shgemv);
+ @cblasobjsc = (
+     cblas_caxpy, cblas_ccopy, cblas_cdotc, cblas_cdotu, cblas_cgbmv, cblas_cgemm, cblas_cgemv,
+     cblas_cgerc, cblas_cgeru, cblas_chbmv, cblas_chemm, cblas_chemv, cblas_cher2, cblas_cher2k,
+diff --git a/getarch.c b/getarch.c
+index 417a3d08c..2f0bccfaf 100644
+--- a/getarch.c
++++ b/getarch.c
+@@ -2046,10 +2046,9 @@ int main(int argc, char *argv[]){
+ #endif
+ 
+ 
+-#ifdef INTEL_AMD
+-#ifndef FORCE
++#if defined(INTEL_AMD) && !defined(FORCE)
+     get_sse();
+-#else
++#elif defined(FORCE_INTEL)
+ 
+     sprintf(buffer, "%s", ARCHCONFIG);
+ 
+@@ -2079,7 +2078,6 @@ int main(int argc, char *argv[]){
+       } else p ++;
+     }
+ #endif
+-#endif
+ 
+ #if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+ printf("__BYTE_ORDER__=__ORDER_BIG_ENDIAN__\n");
+diff --git a/interface/CMakeLists.txt b/interface/CMakeLists.txt
+index e8e0a8896..ee7d40d38 100644
+--- a/interface/CMakeLists.txt
++++ b/interface/CMakeLists.txt
+@@ -166,6 +166,7 @@ if (BUILD_BFLOAT16)
+ endif ()
+ if (BUILD_HFLOAT16)
+   GenerateNamedObjects("gemm.c" "" "shgemm" ${CBLAS_FLAG} "" "" true "HFLOAT16")
++  GenerateNamedObjects("sbgemv.c" "" "shgemv" ${CBLAS_FLAG} "" "" true "HFLOAT16")
+ endif ()
+ 
+ # complex-specific sources
+diff --git a/interface/Makefile b/interface/Makefile
+index abc6d053d..83a894b12 100644
+--- a/interface/Makefile
++++ b/interface/Makefile
+@@ -87,6 +87,7 @@ endif
+ 
+ ifeq ($(BUILD_HFLOAT16),1)
+ SHBLAS3OBJS    = shgemm.$(SUFFIX)
++SHBLAS2OBJS    = shgemv.$(SUFFIX)
+ endif
+ 
+ DBLAS1OBJS    = \
+@@ -338,6 +339,7 @@ endif
+ 
+ ifeq ($(BUILD_HFLOAT16),1)
+ CSHBLAS3OBJS = cblas_shgemm.$(SUFFIX)
++CSHBLAS2OBJS = cblas_shgemv.$(SUFFIX)
+ endif
+ 
+ CDBLAS1OBJS   = \
+@@ -441,6 +443,7 @@ SBBLAS1OBJS  += $(CSBBLAS1OBJS)
+ SBBLAS2OBJS  += $(CSBBLAS2OBJS)
+ SBBLAS3OBJS  += $(CSBBLAS3OBJS)
+ SHBLAS3OBJS  += $(CSHBLAS3OBJS)
++SHBLAS2OBJS  += $(CSHBLAS2OBJS)
+ DBLAS1OBJS   += $(CDBLAS1OBJS)
+ DBLAS2OBJS   += $(CDBLAS2OBJS)
+ DBLAS3OBJS   += $(CDBLAS3OBJS)
+@@ -459,7 +462,7 @@ endif
+ BBLASOBJS    = $(BBLAS3OBJS) $(BBLAS2OBJS) $(BBLAS1OBJS)
+ SBLASOBJS    = $(SBLAS1OBJS) $(SBLAS2OBJS) $(SBLAS3OBJS)
+ SBBLASOBJS   = $(SBBLAS1OBJS) $(SBBLAS2OBJS) $(SBBLAS3OBJS)
+-SHBLASOBJS   = $(SHBLAS3OBJS)
++SHBLASOBJS   = $(SHBLAS3OBJS) $(SHBLAS2OBJS)
+ DBLASOBJS    = $(DBLAS1OBJS) $(DBLAS2OBJS) $(DBLAS3OBJS)
+ QBLASOBJS    = $(QBLAS1OBJS) $(QBLAS2OBJS) $(QBLAS3OBJS)
+ CBLASOBJS    = $(CBLAS1OBJS) $(CBLAS2OBJS) $(CBLAS3OBJS)
+@@ -602,7 +605,7 @@ clean ::
+ level1 : $(SBEXTOBJS) $(SBBLAS1OBJS) $(SBLAS1OBJS) $(DBLAS1OBJS) $(QBLAS1OBJS) $(CBLAS1OBJS) $(ZBLAS1OBJS) $(XBLAS1OBJS)
+ 	$(AR) $(ARFLAGS) -ru $(TOPDIR)/$(LIBNAME) $^
+ 
+-level2 : $(SBBLAS2OBJS) $(BBLAS2OBJS) $(SBLAS2OBJS) $(DBLAS2OBJS) $(QBLAS2OBJS) $(CBLAS2OBJS) $(ZBLAS2OBJS) $(XBLAS2OBJS)
++level2 : $(SBBLAS2OBJS) $(BBLAS2OBJS) $(SBLAS2OBJS) $(DBLAS2OBJS) $(QBLAS2OBJS) $(CBLAS2OBJS) $(ZBLAS2OBJS) $(XBLAS2OBJS) $(SHBLAS2OBJS)
+ 	$(AR) $(ARFLAGS) -ru $(TOPDIR)/$(LIBNAME) $^
+ 
+ level3 : $(SBBLAS3OBJS) $(BBLAS3OBJ) $(SBLAS3OBJS) $(DBLAS3OBJS) $(QBLAS3OBJS) $(CBLAS3OBJS) $(ZBLAS3OBJS) $(XBLAS3OBJS) $(SHBLAS3OBJS)
+@@ -1002,6 +1005,11 @@ sbgemv.$(SUFFIX) sbgemv.$(PSUFFIX) : sbgemv.c
+ 	$(CC) $(CFLAGS) -c $< -o $(@F)
+ endif
+ 
++ifeq ($(BUILD_HFLOAT16),1)
++shgemv.$(SUFFIX) shgemv.$(PSUFFIX) : sbgemv.c
++	$(CC) $(CFLAGS) -c $< -o $(@F)
++endif
++
+ ifndef USE_NETLIB_GEMV
+ sgemv.$(SUFFIX) sgemv.$(PSUFFIX): gemv.c
+ 	$(CC) -c $(CFLAGS) -o $(@F) $<
+@@ -1832,6 +1840,11 @@ cblas_sbgemv.$(SUFFIX) cblas_sbgemv.$(PSUFFIX) : sbgemv.c
+ 	$(CC) -DCBLAS -c $(CFLAGS) $< -o $(@F)
+ endif
+ 
++ifeq ($(BUILD_HFLOAT16),1)
++cblas_shgemv.$(SUFFIX) cblas_shgemv.$(PSUFFIX) : sbgemv.c
++	$(CC) -DCBLAS -c $(CFLAGS) $< -o $(@F)
++endif
++
+ cblas_sgemv.$(SUFFIX) cblas_sgemv.$(PSUFFIX): gemv.c
+ 	$(CC) -DCBLAS -c $(CFLAGS) -o $(@F) $<
+ 
+diff --git a/interface/gemm.c b/interface/gemm.c
+index c5182c266..a16df81ec 100644
+--- a/interface/gemm.c
++++ b/interface/gemm.c
+@@ -587,7 +587,18 @@ void CNAME(enum CBLAS_ORDER order, enum CBLAS_TRANSPOSE TransA, enum CBLAS_TRANS
+ 	 args.m, args.n, args.k, args.lda, args.ldb, args.ldc);
+ #endif
+ 
+-#if defined(GEMM_GEMV_FORWARD) && !defined(GEMM3M) && !defined(COMPLEX) && !defined(HFLOAT16) && (!defined(BFLOAT16) || (!defined(BGEMM) && defined(SBGEMM_GEMV_FORWARD)) || (defined(BGEMM) && defined(BGEMM_GEMV_FORWARD)))
++#if (!defined(BFLOAT16) || (!defined(BGEMM) && defined(SBGEMM_GEMV_FORWARD)) || (defined(BGEMM) && defined(BGEMM_GEMV_FORWARD)))
++#define BFLOAT16_GEMM_GEMV_FORWARD 1
++#else
++#define BFLOAT16_GEMM_GEMV_FORWARD 0
++#endif
++#if (!defined(HFLOAT16) || (!defined(HGEMM) && defined(SHGEMM_GEMV_FORWARD)) || (defined(HGEMM) && defined(HGEMM_GEMV_FORWARD)))
++#define HFLOAT16_GEMM_GEMV_FORWARD 1
++#else
++#define HFLOAT16_GEMM_GEMV_FORWARD 0
++#endif
++
++#if defined(GEMM_GEMV_FORWARD) && !defined(GEMM3M) && !defined(COMPLEX) && HFLOAT16_GEMM_GEMV_FORWARD && BFLOAT16_GEMM_GEMV_FORWARD
+ #if defined(ARCH_ARM64)
+   // The gemv kernels in arm64/{gemv_n.S,gemv_n_sve.c,gemv_t.S,gemv_t_sve.c}
+   // perform poorly in certain circumstances. We use the following boolean
+diff --git a/interface/sbgemv.c b/interface/sbgemv.c
+index cee3e80fc..12db2dfb1 100644
+--- a/interface/sbgemv.c
++++ b/interface/sbgemv.c
+@@ -48,6 +48,10 @@
+ #define GEMV_THREAD_N bgemv_thread_n
+ #define GEMV_THREAD_T bgemv_thread_t
+ #define ERROR_NAME "BGEMV "
++#elif defined(HFLOAT16)
++#define GEMV_THREAD_N shgemv_thread_n
++#define GEMV_THREAD_T shgemv_thread_t
++#define ERROR_NAME "SHGEMV "
+ #else
+ #define GEMV_THREAD_N sbgemv_thread_n
+ #define GEMV_THREAD_T sbgemv_thread_t
+diff --git a/interface/trsm.c b/interface/trsm.c
+index 715c83a1f..dcc64769d 100644
+--- a/interface/trsm.c
++++ b/interface/trsm.c
+@@ -355,6 +355,23 @@ void CNAME(enum CBLAS_ORDER order,
+     return;
+   }
+ 
++#if !defined(COMPLEX) && !defined(DOUBLE) && !defined(BFLOAT16)  && !defined(HFLOAT16)
++#if defined(ARCH_ARM64) && (defined(USE_STRMM_KERNEL_DIRECT)||defined(DYNAMIC_ARCH))
++#if defined(DYNAMIC_ARCH)
++ if (support_sme1())
++#endif
++  if (args.m == 0 || args.n == 0) return;
++  if (order == CblasRowMajor && Diag == CblasNonUnit && Side == CblasLeft && m == lda && n == ldb) {
++    if (Trans ==  CblasNoTrans) {
++      (Uplo == CblasUpper ? STRMM_DIRECT_LNUN : STRMM_DIRECT_LNLN)(m, n, alpha, a, lda, b, ldb);
++    } else if (Trans == CblasTrans) {
++      (Uplo == CblasUpper ? STRMM_DIRECT_LTUN : STRMM_DIRECT_LTLN)(m, n, alpha, a, lda, b, ldb);
++    }
++    return;
++  }
++#endif
++#endif
++
+ #endif
+ 
+   if ((args.m == 0) || (args.n == 0)) return;
+diff --git a/kernel/CMakeLists.txt b/kernel/CMakeLists.txt
+index d73dc27e2..312a08462 100644
+--- a/kernel/CMakeLists.txt
++++ b/kernel/CMakeLists.txt
+@@ -228,6 +228,10 @@ function (build_core TARGET_CORE KDIR TSUFFIX KERNEL_DEFINITIONS)
+ 	    GenerateNamedObjects("${KERNELDIR}/${SBGEMVNKERNEL}" "" "gemv_n" false "" "" false "BFLOAT16")
+ 	    GenerateNamedObjects("${KERNELDIR}/${SBGEMVTKERNEL}" "" "gemv_t" false "" "" false "BFLOAT16")
+     endif ()
++    if (BUILD_HFLOAT16)
++	    GenerateNamedObjects("${KERNELDIR}/${SHGEMVNKERNEL}" "" "gemv_n" false "" "" false "HFLOAT16")
++	    GenerateNamedObjects("${KERNELDIR}/${SHGEMVTKERNEL}" "" "gemv_t" false "" "" false "HFLOAT16")
++    endif ()
+     # Makefile.L3
+     set(USE_TRMM false)
+     string(TOUPPER ${TARGET_CORE} UC_TARGET_CORE)
+@@ -237,6 +241,10 @@ function (build_core TARGET_CORE KDIR TSUFFIX KERNEL_DEFINITIONS)
+     if (ZARCH OR (UC_TARGET_CORE MATCHES POWER8) OR (UC_TARGET_CORE MATCHES POWER9) OR (UC_TARGET_CORE MATCHES POWER10))
+       set(USE_TRMM true)
+     endif ()
++    set(USE_DIRECT_STRMM false)
++    if (ARM64)
++       set(USE_DIRECT_STRMM true)
++    endif()
+     set(USE_DIRECT_SGEMM false)
+     if (X86_64 OR ARM64)
+        set(USE_DIRECT_SGEMM true)
+@@ -279,6 +287,16 @@ function (build_core TARGET_CORE KDIR TSUFFIX KERNEL_DEFINITIONS)
+    	  endif ()
+     endif()
+ 
++    if (USE_DIRECT_STRMM)
++        if (ARM64)
++        set (STRMMDIRECTKERNEL strmm_direct_arm64_sme1.c)
++        GenerateNamedObjects("${KERNELDIR}/${STRMMDIRECTKERNEL}" "" "trmm_direct_LNUN" false "" "" false SINGLE)
++        GenerateNamedObjects("${KERNELDIR}/${STRMMDIRECTKERNEL}" "" "trmm_direct_LNLN" false "" "" false SINGLE)
++        GenerateNamedObjects("${KERNELDIR}/${STRMMDIRECTKERNEL}" "" "trmm_direct_LTUN" false "" "" false SINGLE)
++        GenerateNamedObjects("${KERNELDIR}/${STRMMDIRECTKERNEL}" "" "trmm_direct_LTLN" false "" "" false SINGLE)
++        endif ()
++      endif ()
++
+     foreach (float_type SINGLE DOUBLE)
+       string(SUBSTRING ${float_type} 0 1 float_char)
+       GenerateNamedObjects("${KERNELDIR}/${${float_char}GEMMKERNEL}" "" "gemm_kernel" false "" "" false ${float_type})
+@@ -454,6 +472,7 @@ function (build_core TARGET_CORE KDIR TSUFFIX KERNEL_DEFINITIONS)
+         set(TRMM_KERNEL "${${float_char}GEMMKERNEL}")
+       endif ()
+ 
++
+       if (${float_type} STREQUAL "COMPLEX" OR ${float_type} STREQUAL "ZCOMPLEX")
+ 
+         # just enumerate all these. there is an extra define for these indicating which side is a conjugate (e.g. CN NC NN) that I don't really want to work into GenerateCombinationObjects
+diff --git a/kernel/Makefile.L2 b/kernel/Makefile.L2
+index a9fcf9225..aea0c9cbb 100644
+--- a/kernel/Makefile.L2
++++ b/kernel/Makefile.L2
+@@ -101,6 +101,16 @@ SBGEMVTKERNEL = ../x86_64/sbgemv_t.c
+ endif
+ endif
+ 
++ifeq ($(BUILD_HFLOAT16),1)
++ifndef SHGEMVNKERNEL
++SHGEMVNKERNEL = ../generic/gemv_n.c
++endif
++
++ifndef SHGEMVTKERNEL
++SHGEMVTKERNEL = ../generic/gemv_t.c
++endif
++endif
++
+ ### GER ###
+ 
+ ifndef SGERKERNEL
+@@ -299,6 +309,12 @@ SBBLASOBJS     += \
+         sbgemv_t$(TSUFFIX).$(SUFFIX)
+ endif
+ 
++ifeq ($(BUILD_HFLOAT16),1)
++SHBLASOBJS     += \
++        shgemv_n$(TSUFFIX).$(SUFFIX) \
++        shgemv_t$(TSUFFIX).$(SUFFIX)
++endif
++
+ ifneq "$(or $(BUILD_SINGLE), $(BUILD_DOUBLE), $(BUILD_COMPLEX))" ""
+ $(KDIR)sgemv_n$(TSUFFIX).$(SUFFIX)  $(KDIR)sgemv_n$(TSUFFIX).$(PSUFFIX)  : $(KERNELDIR)/$(SGEMVNKERNEL) $(TOPDIR)/common.h $(GEMVDEP)
+ 	$(CC) -c $(CFLAGS) -UDOUBLE -UCOMPLEX  -UTRANS $< -o $@
+@@ -558,3 +574,10 @@ $(KDIR)bgemv_t$(TSUFFIX).$(SUFFIX) $(KDIR)bgemv_t$(TPSUFFIX).$(PSUFFIX) : $(KERN
+ 	$(CC) -c $(CFLAGS) -DBGEMM -UCOMPLEX $< -o $@
+ endif
+ 
++ifeq ($(BUILD_HFLOAT16),1)
++$(KDIR)shgemv_n$(TSUFFIX).$(SUFFIX) $(KDIR)shgemv_n$(TPSUFFIX).$(PSUFFIX) : $(KERNELDIR)/$(SHGEMVNKERNEL)
++	$(CC) -c $(CFLAGS) -UCOMPLEX $< -o $@
++$(KDIR)shgemv_t$(TSUFFIX).$(SUFFIX) $(KDIR)shgemv_t$(TPSUFFIX).$(PSUFFIX) : $(KERNELDIR)/$(SHGEMVTKERNEL)
++	$(CC) -c $(CFLAGS) -UCOMPLEX $< -o $@
++endif
++
+diff --git a/kernel/Makefile.L3 b/kernel/Makefile.L3
+index 5d0f7213c..8fe505183 100644
+--- a/kernel/Makefile.L3
++++ b/kernel/Makefile.L3
+@@ -53,6 +53,7 @@ ifeq ($(ARCH), arm64)
+ USE_TRMM = 1
+ USE_DIRECT_SGEMM = 1
+ USE_DIRECT_SSYMM = 1
++USE_DIRECT_STRMM = 1
+ endif
+ 
+ ifeq ($(ARCH), riscv64)
+@@ -149,6 +150,18 @@ endif
+ endif
+ endif
+ 
++ifdef USE_DIRECT_STRMM
++ifndef STRMMDIRECTKERNEL
++ifeq ($(ARCH), arm64)
++ifeq ($(TARGET_CORE), ARMV9SME)
++HAVE_SME = 1
++endif
++STRMMDIRECTKERNEL = strmm_direct_arm64_sme1.c
++endif
++endif
++endif
++
++
+ ifeq ($(BUILD_BFLOAT16), 1)
+ ifndef BGEMMKERNEL
+ BGEMM_BETA = ../generic/gemm_beta.c
+@@ -240,6 +253,14 @@ SKERNELOBJS += \
+ endif
+ endif
+ 
++ifdef USE_DIRECT_STRMM
++ifeq ($(ARCH), arm64)
++SKERNELOBJS += \
++	strmm_direct_LNUN$(TSUFFIX).$(SUFFIX) strmm_direct_LNLN$(TSUFFIX).$(SUFFIX) \
++	strmm_direct_LTUN$(TSUFFIX).$(SUFFIX) strmm_direct_LTLN$(TSUFFIX).$(SUFFIX)
++endif
++endif
++
+ ifneq "$(or $(BUILD_DOUBLE),$(BUILD_COMPLEX16))" ""
+ DKERNELOBJS	+= \
+ 	dgemm_beta$(TSUFFIX).$(SUFFIX) \
+@@ -1179,6 +1200,23 @@ else
+ 	$(CC) $(CFLAGS) -c -DTRMMKERNEL -UDOUBLE -UCOMPLEX -ULEFT -DTRANSA $< -o $@
+ endif
+ 
++
++ifdef USE_DIRECT_STRMM
++ifeq ($(ARCH), arm64)
++$(KDIR)strmm_direct_LNUN$(TSUFFIX).$(SUFFIX) : $(KERNELDIR)/$(STRMMDIRECTKERNEL)
++	$(CC) $(CFLAGS) -c -UDOUBLE -UCOMPLEX -UTRANSA -DUPPER $< -o $@
++
++$(KDIR)strmm_direct_LNLN$(TSUFFIX).$(SUFFIX) : $(KERNELDIR)/$(STRMMDIRECTKERNEL)
++	$(CC) $(CFLAGS) -c -UDOUBLE -UCOMPLEX -UTRANSA -UUPPER $< -o $@
++
++$(KDIR)strmm_direct_LTUN$(TSUFFIX).$(SUFFIX) : $(KERNELDIR)/$(STRMMDIRECTKERNEL)
++	$(CC) $(CFLAGS) -c -UDOUBLE -UCOMPLEX -DTRANSA -DUPPER $< -o $@
++
++$(KDIR)strmm_direct_LTLN$(TSUFFIX).$(SUFFIX) : $(KERNELDIR)/$(STRMMDIRECTKERNEL)
++	$(CC) $(CFLAGS) -c -UDOUBLE -UCOMPLEX -DTRANSA -UUPPER $< -o $@
++endif
++endif
++
+ $(KDIR)dtrmm_kernel_LN$(TSUFFIX).$(SUFFIX) : $(KERNELDIR)/$(DTRMMKERNEL)
+ ifeq ($(OS), AIX)
+ 	$(CC) $(CFLAGS) -S -DTRMMKERNEL -DDOUBLE -UCOMPLEX -DLEFT -UTRANSA $< -o - > dtrmm_kernel_ln.s
+diff --git a/kernel/arm64/KERNEL.NEOVERSEN2 b/kernel/arm64/KERNEL.NEOVERSEN2
+index 5ada34e6b..6431422fa 100644
+--- a/kernel/arm64/KERNEL.NEOVERSEN2
++++ b/kernel/arm64/KERNEL.NEOVERSEN2
+@@ -189,7 +189,7 @@ ZGEMMONCOPYOBJ =  zgemm_oncopy$(TSUFFIX).$(SUFFIX)
+ ZGEMMOTCOPYOBJ =  zgemm_otcopy$(TSUFFIX).$(SUFFIX)
+ 
+ ifeq ($(BUILD_BFLOAT16), 1)
+-BGEMM_BETA    =  sbgemm_beta_neoversen2.c
++BGEMM_BETA    =  bgemm_beta_neon.c
+ BGEMMKERNEL    = sbgemm_kernel_$(BGEMM_UNROLL_M)x$(BGEMM_UNROLL_N)_neoversen2.c
+ BGEMMINCOPY    = sbgemm_ncopy_$(BGEMM_UNROLL_M)_neoversen2.c
+ BGEMMITCOPY    = sbgemm_tcopy_$(BGEMM_UNROLL_M)_neoversen2.c
+diff --git a/kernel/arm64/bgemm_kernel_2vlx4_neoversev1_impl.c b/kernel/arm64/bgemm_kernel_2vlx4_neoversev1_impl.c
+index 215d0d717..6749c7948 100644
+--- a/kernel/arm64/bgemm_kernel_2vlx4_neoversev1_impl.c
++++ b/kernel/arm64/bgemm_kernel_2vlx4_neoversev1_impl.c
+@@ -40,7 +40,8 @@
+ 
+ #define UPDATE_C(PG, PTR, DST, SRC)                                            \
+   do {                                                                         \
+-    DST = svreinterpret_f32_u32(svld1uh_u32((pghalf), (uint16_t*)PTR));        \
++    svtmp16 = svld1_bf16((pghalf), (PTR));                                     \
++    DST = svreinterpret_f32(svzip1_bf16(zeros, svtmp16));                      \
+     DST = svadd_z((PG), SRC, DST);                                             \
+     svtmp16 = svcvt_bf16_f32_z((PG), DST);                                     \
+     svtmp16 = svuzp1_bf16(svtmp16, svtmp16);                                   \
+@@ -55,7 +56,8 @@
+ 
+ #define UPDATE_C(PG, PTR, DST, SRC)                                            \
+   do {                                                                         \
+-    DST = svreinterpret_f32_u32(svld1uh_u32((pghalf), (uint16_t*)PTR));        \
++    svtmp16 = svld1_bf16((pghalf), (PTR));                                     \
++    DST = svreinterpret_f32(svzip1_bf16(zeros, svtmp16));                      \
+     DST = svmad_z((PG), svalpha, SRC, DST);                                    \
+     svtmp16 = svcvt_bf16_f32_z((PG), DST);                                     \
+     svtmp16 = svuzp1_bf16(svtmp16, svtmp16);                                   \
+@@ -133,6 +135,7 @@ static int bgemm_kernel_neoversev1_alpha(BLASLONG m, BLASLONG n, BLASLONG k,
+     OUTPUT_FLOAT *ptr_c0, *ptr_c1, *ptr_c2, *ptr_c3;
+     svfloat32_t tmp0, tmp1, tmp2, tmp3;
+ #ifdef BGEMM
++    svbfloat16_t zeros = svdup_n_bf16(TO16(0.0));
+     svbfloat16_t svtmp16;
+ #else
+     float32x2_t tmp4, tmp5, tmp6, tmp7;
+diff --git a/kernel/arm64/sbgemm_kernel_8x4_neoversen2_impl.c b/kernel/arm64/sbgemm_kernel_8x4_neoversen2_impl.c
+index 61889ca7a..d4e0a38af 100644
+--- a/kernel/arm64/sbgemm_kernel_8x4_neoversen2_impl.c
++++ b/kernel/arm64/sbgemm_kernel_8x4_neoversen2_impl.c
+@@ -51,7 +51,8 @@
+ #ifdef ALPHA_ONE
+ #define UPDATE_C(PG16, PG32, PTR, SRC)                                    \
+   do {                                                                    \
+-    tmp32 = svreinterpret_f32_u32(svld1uh_u32((PG16), (uint16_t*)PTR));   \
++    tmp16 = svld1_bf16((PG16), (PTR));                                    \
++    tmp32 = svreinterpret_f32(svzip1_bf16(zeros, tmp16));                 \
+     tmp32 = svadd_z((PG32), SRC, tmp32);                                  \
+     tmp16 = svcvt_bf16_f32_z((PG32), tmp32);                              \
+     tmp16 = svuzp1_bf16(tmp16, tmp16);                                    \
+@@ -60,7 +61,8 @@
+ #else
+ #define UPDATE_C(PG16, PG32, PTR, SRC)                                     \
+   do {                                                                     \
+-    tmp32 = svreinterpret_f32_u32(svld1uh_u32((PG16), (uint16_t*)PTR));    \
++    tmp16 = svld1_bf16((PG16), (PTR));                                     \
++    tmp32 = svreinterpret_f32(svzip1_bf16(zeros, tmp16));                  \
+     tmp32 = svmad_z((PG32), svalpha, SRC, tmp32);                          \
+     tmp16 = svcvt_bf16_f32_z((PG32), tmp32);                               \
+     tmp16 = svuzp1_bf16(tmp16, tmp16);                                     \
+@@ -121,6 +123,7 @@ static int gemm_kernel_neoversen2_alpha(BLASLONG m, BLASLONG n, BLASLONG k, FLOA
+ #ifdef BGEMM
+   svbool_t pg16_first_2 = svdupq_b16(1, 1, 0, 0, 0, 0, 0, 0);
+   svbool_t pg16_first_1 = svdupq_b16(1, 0, 0, 0, 0, 0, 0, 0);
++  svbfloat16_t zeros = svdup_n_bf16(vcvth_bf16_f32(0.0));
+ #endif
+ 
+   bfloat16_t *ptr_a = (bfloat16_t *)A;
+diff --git a/kernel/arm64/ssymm_direct_alpha_beta_arm64_sme1.c b/kernel/arm64/ssymm_direct_alpha_beta_arm64_sme1.c
+index 8e3c0c056..d89eb3dbb 100644
+--- a/kernel/arm64/ssymm_direct_alpha_beta_arm64_sme1.c
++++ b/kernel/arm64/ssymm_direct_alpha_beta_arm64_sme1.c
+@@ -189,7 +189,11 @@ static void ssymm_direct_sme1_preprocessLL(uint64_t nbr, uint64_t nbc,
+     }
+   }
+ }
+-
++#else
++static void ssymm_direct_sme1_preprocessLU(uint64_t nbr, uint64_t nbc,
++                const float *restrict a, float *restrict a_mod){}
++static void ssymm_direct_sme1_preprocessLL(uint64_t nbr, uint64_t nbc,
++                const float *restrict a, float *restrict a_mod){}
+ #endif
+ 
+ //
+diff --git a/kernel/arm64/strmm_direct_arm64_sme1.c b/kernel/arm64/strmm_direct_arm64_sme1.c
+new file mode 100644
+index 000000000..f6a850596
+--- /dev/null
++++ b/kernel/arm64/strmm_direct_arm64_sme1.c
+@@ -0,0 +1,260 @@
++/*
++ Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
++ SPDX-License-Identifier: BSD-3-Clause-Clear
++*/
++
++#include "common.h"
++#include <stdlib.h>
++#include <inttypes.h>
++#include <math.h>
++//#include "sme_abi.h"
++#if defined(HAVE_SME)
++
++#if defined(__ARM_FEATURE_SME) && defined(__clang__) && __clang_major__ >= 16
++#include <arm_sme.h>
++#endif
++
++/* Function Definitions */
++static uint64_t sve_cntw() {
++    uint64_t cnt;
++    asm volatile(
++        "rdsvl  %[res], #1\n"
++        "lsr    %[res], %[res], #2\n"
++        : [res] "=r" (cnt) ::
++    );
++    return cnt;
++}
++
++#if defined(__ARM_FEATURE_SME) && defined(__ARM_FEATURE_LOCALLY_STREAMING) && defined(__clang__) && __clang_major__ >= 16
++
++// Transpose 1SVL x N panel of A
++__attribute__((always_inline))
++inline static void transpose_panel_lower(const float *restrict a, float *restrict b, 
++                uint64_t rows, uint64_t cols,
++                uint64_t a_step, uint64_t rows_index)
++__arm_out("za") __arm_streaming {
++    // for Lower Trangular Matrix
++    uint64_t svl = svcntw();
++    uint64_t col_batch = svl;
++
++    svzero_za();
++    uint64_t last_rows_index = rows_index + rows - 1;
++    for (uint64_t k = 0; k < cols; k += col_batch) {
++        if (last_rows_index < k) {
++            // Early exit: if all rows are above the diagonal, no valid elements remain
++            break;
++        }
++        // Load to horizontal slices
++        for (uint64_t row = 0; row < rows; row++) {
++            svbool_t pg_row = svwhilelt_b32_u64(k, MIN(rows_index + row + 1, cols));
++            svld1_hor_za32(0, row, pg_row, &a[row * a_step + k]);
++        }
++
++        // Save from vertical slices
++        col_batch = MIN(col_batch, cols - k);
++        for (uint64_t col = 0; col < col_batch; col++) {
++            svst1_ver_za32(0, col, svptrue_b32(), &b[(col + k) * svl]);
++        }
++    }
++}
++
++__attribute__((always_inline))
++inline static void transpose_panel_upper(const float *restrict a, float *restrict b, 
++                uint64_t rows, uint64_t cols,
++                uint64_t a_step, uint64_t rows_index)
++__arm_out("za") __arm_streaming {
++    // for Upper Trangular Matrix
++    uint64_t svl = svcntw();
++    uint64_t col_batch = svl;
++
++    svzero_za();
++    // Start from column k = rows_index to ensure we only process the upper triangle (k >= rows_index)
++    for (uint64_t k = rows_index; k < cols; k += col_batch) {
++        // Load to horizontal slices
++        for (uint64_t row = 0; row < rows; row++) {
++            svbool_t pg_row = svwhilelt_b32_u64(k, cols);
++            svld1_hor_za32(0, row, pg_row, &a[row * a_step + k]);
++        }
++
++        // Save from vertical slices
++        col_batch = MIN(col_batch, cols - k);
++        for (uint64_t col = 0, real_col = k; col < col_batch; col++, real_col++) {
++            // Only the upper triangular part of the matrix is stored.
++            svbool_t pg_col = svwhilelt_b32_u64(rows_index, real_col + 1);
++            svst1_ver_za32(0, col, pg_col, &b[(col + k) * svl]);  
++        }
++    }
++}
++
++__arm_new("za") __arm_locally_streaming
++static void strmm_direct_sme1_preprocess(uint64_t nbr, uint64_t nbc,
++                const float *restrict a, float *restrict a_mod) {
++    const uint64_t num_rows = nbr;
++    uint64_t row_batch = svcntsw();
++    for (uint64_t row_idx = 0; row_idx < num_rows; row_idx += row_batch) {
++        // Transpose 1SVL x N panel of A
++        row_batch = MIN(row_batch, num_rows - row_idx);
++#if !defined(UPPER)
++        transpose_panel_lower(&a[row_idx * nbc], &a_mod[row_idx * nbc], row_batch, nbc, nbc, row_idx);
++#else
++        transpose_panel_upper(&a[row_idx * nbc], &a_mod[row_idx * nbc], row_batch, nbc, nbc, row_idx);
++#endif
++    }
++}
++
++// Outer product kernel.
++// Computes a 2SVL x 2SVL block of C, utilizing all four FP32 tiles of ZA.
++__attribute__((always_inline)) inline void
++kernel_2x2(const float *A, const float *B, float *C, size_t shared_dim,
++           size_t ldc, size_t block_rows, size_t block_cols, float alpha, uint64_t row_idx)
++    __arm_out("za") __arm_streaming {
++    const uint64_t svl = svcntw();
++    size_t ldb = ldc;
++    // Predicate set-up
++    svbool_t pg = svptrue_b32();    
++    svbool_t pg_a_0 = svwhilelt_b32_u64(0, block_rows);
++    svbool_t pg_a_1 = svwhilelt_b32_u64(svl, block_rows);
++
++#if (!defined(TRANSA) && !defined(UPPER)) || (defined(TRANSA) && defined(UPPER))
++#define pg_a_0_full pg_a_0
++#define pg_a_1_full pg_a_1
++#endif
++    svbool_t pg_b_0 = svwhilelt_b32_u64(0, block_cols);
++    svbool_t pg_b_1 = svwhilelt_b32_u64(svl, block_cols);
++
++#define pg_c_0 pg_b_0
++#define pg_c_1 pg_b_1
++
++    svzero_za();
++    svfloat32_t alpha_vec = svdup_f32(alpha);
++    // Iterate through shared dimension (K)
++#if (!defined(TRANSA) && defined(UPPER)) || (defined(TRANSA) && !defined(UPPER))
++    for (size_t k = row_idx, valid_index = 1; k < shared_dim; k++,valid_index++) {
++        pg_a_0 = svwhilelt_b32_u64(0, MIN(valid_index, block_rows));
++        pg_a_1 = svwhilelt_b32_u64(svl, MIN(valid_index, block_rows));
++#else
++    for (size_t k = 0; k < MIN(row_idx + block_rows, shared_dim); k++) {
++        // If k exceeds row_idx, mask out rows before (k - row_idx)
++        // This ensures only valid rows are included for lower triangular logic.
++        if (k > row_idx) {
++            pg_a_0 = svnot_b_z(pg_a_0_full, svwhilelt_b32_u64(0, k - row_idx));  
++            pg_a_1 = svnot_b_z(pg_a_1_full, svwhilelt_b32_u64(svl, k - row_idx));
++        }
++#endif
++
++#if !defined(TRANSA)
++        // Load column of A
++        svfloat32_t col_a_0 = svld1(pg_a_0, &A[k * svl]);
++        svfloat32_t col_a_1 = svld1(pg_a_1, &A[(k + shared_dim) * svl]);
++#else   
++        svfloat32_t col_a_0 = svld1(pg_a_0, &A[k * shared_dim]);
++        svfloat32_t col_a_1 = svld1(pg_a_1, &A[k * shared_dim + svl]);
++#endif       
++        col_a_0 = svmul_x(pg_a_0, alpha_vec, col_a_0);
++        col_a_1 = svmul_x(pg_a_1, alpha_vec, col_a_1);
++        // Load row of B
++        svfloat32_t row_b_0 = svld1(pg_b_0, &B[k * ldb]);
++        svfloat32_t row_b_1 = svld1(pg_b_1, &B[k * ldb + svl]);
++        // Perform outer product
++        svmopa_za32_m(/*tile*/0, pg_a_0, pg, col_a_0, row_b_0);
++        svmopa_za32_m(/*tile*/1, pg_a_0, pg, col_a_0, row_b_1);
++        svmopa_za32_m(/*tile*/2, pg_a_1, pg, col_a_1, row_b_0);
++        svmopa_za32_m(/*tile*/3, pg_a_1, pg, col_a_1, row_b_1);
++    }
++
++    // Store to C from ZA
++    for (size_t i = 0; i < MIN(svl, block_rows); i++) {
++      svst1_hor_za32(/*tile*/0, /*slice*/i, pg_c_0, &C[i * ldc]);
++      svst1_hor_za32(/*tile*/1, /*slice*/i, pg_c_1, &C[i * ldc + svl]);
++    }
++    for (size_t i = svl; i < block_rows; i++) {
++      svst1_hor_za32(/*tile*/2, /*slice*/i, pg_c_0, &C[i * ldc]);
++      svst1_hor_za32(/*tile*/3, /*slice*/i, pg_c_1, &C[i * ldc + svl]);
++    }
++
++}
++
++__arm_new("za") __arm_locally_streaming
++static inline void strmm_direct_alpha_sme1_2VLx2VL(uint64_t m, uint64_t k, uint64_t n, const float* alpha,\
++                                   const float *ba, float *restrict bb) {
++    const uint64_t num_rows = m;
++    const uint64_t num_cols = n;
++    
++    const float *restrict a_ptr = ba;
++    const float *restrict b_ptr = bb;
++    float *restrict c_ptr = bb;
++    
++    const uint64_t svl = svcntw();
++    const uint64_t svl_x2 = 2*svl;
++    const uint64_t ldc = n; 
++    
++
++    uint64_t row_idx = 0;
++#if (!defined(TRANSA) && defined(UPPER)) || (defined(TRANSA) && !defined(UPPER))
++    // 2x2 loop
++    uint64_t row_batch = svl_x2;
++    // Block over rows of C (panels of A)
++    for (; row_idx < num_rows; row_idx += row_batch) {
++        row_batch = MIN(row_batch, num_rows - row_idx);
++#else
++    // Calculate the remainder of num_rows divided by 2VL to determine tail tile size
++    uint64_t row_batch = num_rows % svl_x2;
++    // If there's no remainder, use full tile size (2VL) for initial batch
++    if (row_batch == 0) row_batch = svl_x2;
++    // Loop from bottom to top, processing rows in batches
++    for (uint64_t index = num_rows; index > 0; index -= row_batch, row_batch = svl_x2) {
++        // Compute the starting row index for the current batch
++        row_idx = index - row_batch;        
++#endif
++        uint64_t col_idx = 0;
++        uint64_t col_batch = svl_x2;
++        // Block over column dimension of C
++        for (; col_idx < num_cols; col_idx += col_batch) {
++            col_batch = MIN(col_batch, num_cols - col_idx);
++#if !defined(TRANSA)
++            kernel_2x2(&a_ptr[row_idx * k], &b_ptr[col_idx],
++                    &c_ptr[row_idx * ldc + col_idx], k,
++                    ldc, row_batch, col_batch, *alpha, row_idx);
++#else
++            kernel_2x2(&a_ptr[row_idx], &b_ptr[col_idx],
++                &c_ptr[row_idx * ldc + col_idx], k,
++                ldc, row_batch, col_batch, *alpha, row_idx);
++#endif
++        }
++    }
++
++    return;
++}
++
++#else
++static void strmm_direct_sme1_preprocess(uint64_t nbr, uint64_t nbc,
++                                         const float *restrict a, float *restrict a_mod) {}
++static void strmm_direct_alpha_sme1_2VLx2VL(uint64_t m, uint64_t k, uint64_t n, const float* alpha,\
++                                            const float *ba, float *restrict bb){}
++#endif
++
++void CNAME (BLASLONG M, BLASLONG N, float alpha, float * __restrict A,\
++            BLASLONG strideA, float * __restrict B, BLASLONG strideB){
++#if !defined(TRANSA)
++    uint64_t m_mod, vl_elms;
++    
++    vl_elms = sve_cntw();
++
++    m_mod = ceil((double)M/(double)vl_elms) * vl_elms;
++
++    float *A_mod = (float *) malloc(m_mod*M*sizeof(float));
++    strmm_direct_sme1_preprocess(M, M, A, A_mod);
++    /* Calculate B = alpha*A*B*/
++    strmm_direct_alpha_sme1_2VLx2VL(M, M, N, &alpha, A_mod, B);
++    free(A_mod);
++#else
++    strmm_direct_alpha_sme1_2VLx2VL(M, M, N, &alpha, A, B);
++#endif
++}
++
++#else
++void CNAME (BLASLONG M, BLASLONG N, float alpha, float * __restrict A,\
++            BLASLONG strideA, float * __restrict B, BLASLONG strideB){
++            }
++
++#endif
+diff --git a/kernel/generic/bf16_macros.h b/kernel/generic/conversion_macros.h
+similarity index 83%
+rename from kernel/generic/bf16_macros.h
+rename to kernel/generic/conversion_macros.h
+index f1b02cea4..69f852012 100644
+--- a/kernel/generic/bf16_macros.h
++++ b/kernel/generic/conversion_macros.h
+@@ -27,6 +27,7 @@
+  * *****************************************************************************/
+ 
+ #if defined(BFLOAT16) && defined(BFLOAT16CONVERSION)
++
+ static float
+ bfloat16tof32 (bfloat16 value)
+ {
+@@ -48,17 +49,34 @@ static bfloat16 f32tobfloat16(float value) {
+ #ifdef BGEMM
+ #define ALPHA bfloat16tof32(alpha)
+ #define BETA bfloat16tof32(beta)
+-#define BF16TOF32(x) (bfloat16tof32(x))
+-#define F32TOBF16(x) (f32tobfloat16(x))
++#define TO_F32(x) (bfloat16tof32(x))
++#define TO_OUTPUT(x) (f32tobfloat16(x))
++#else
++#define ALPHA alpha
++#define BETA beta
++#define TO_F32(x) (bfloat16tof32(x))
++#define TO_OUTPUT(x) x
++#endif
++
++#elif defined(HFLOAT16)
++
++#ifdef HGEMM
++#define ALPHA (float)(alpha)
++#define BETA (float)(beta)
++#define TO_F32(x) ((float)(x))
++#define TO_OUTPUT(x) ((_Float16)(x))
+ #else
+ #define ALPHA alpha
+ #define BETA beta
+-#define BF16TOF32(x) (bfloat16tof32(x))
+-#define F32TOBF16(x) x
++#define TO_F32(x) ((float)(x))
++#define TO_OUTPUT(x) x
+ #endif
++
+ #else
++
+ #define ALPHA alpha
+ #define BETA beta
+-#define BF16TOF32(x) x
+-#define F32TOBF16(x) x
++#define TO_F32(x) x
++#define TO_OUTPUT(x) x
++
+ #endif
+diff --git a/kernel/generic/gemmkernel_2x2.c b/kernel/generic/gemmkernel_2x2.c
+index c24370c89..07da2cbc8 100644
+--- a/kernel/generic/gemmkernel_2x2.c
++++ b/kernel/generic/gemmkernel_2x2.c
+@@ -27,7 +27,8 @@
+  * *****************************************************************************/
+ 
+ #include "common.h"
+-#include "bf16_macros.h"
++
++#include "conversion_macros.h"
+ 
+ int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,FLOAT* C,BLASLONG ldc
+ #ifdef TRMMKERNEL
+@@ -60,36 +61,36 @@ int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,
+                {
+                   load0 = ptrba[2*0+0];
+                   load1 = ptrbb[2*0+0];
+-                  res0 = res0+BF16TOF32(load0)*BF16TOF32(load1);
++                  res0 = res0+TO_F32(load0)*TO_F32(load1);
+                   load2 = ptrba[2*0+1];
+-                  res1 = res1+BF16TOF32(load2)*BF16TOF32(load1);
++                  res1 = res1+TO_F32(load2)*TO_F32(load1);
+                   load3 = ptrbb[2*0+1];
+-                  res2 = res2+BF16TOF32(load0)*BF16TOF32(load3);
+-                  res3 = res3+BF16TOF32(load2)*BF16TOF32(load3);
++                  res2 = res2+TO_F32(load0)*TO_F32(load3);
++                  res3 = res3+TO_F32(load2)*TO_F32(load3);
+                   load4 = ptrba[2*1+0];
+                   load5 = ptrbb[2*1+0];
+-                  res0 = res0+BF16TOF32(load4)*BF16TOF32(load5);
++                  res0 = res0+TO_F32(load4)*TO_F32(load5);
+                   load6 = ptrba[2*1+1];
+-                  res1 = res1+BF16TOF32(load6)*BF16TOF32(load5);
++                  res1 = res1+TO_F32(load6)*TO_F32(load5);
+                   load7 = ptrbb[2*1+1];
+-                  res2 = res2+BF16TOF32(load4)*BF16TOF32(load7);
+-                  res3 = res3+BF16TOF32(load6)*BF16TOF32(load7);
++                  res2 = res2+TO_F32(load4)*TO_F32(load7);
++                  res3 = res3+TO_F32(load6)*TO_F32(load7);
+                   load0 = ptrba[2*2+0];
+                   load1 = ptrbb[2*2+0];
+-                  res0 = res0+BF16TOF32(load0)*BF16TOF32(load1);
++                  res0 = res0+TO_F32(load0)*TO_F32(load1);
+                   load2 = ptrba[2*2+1];
+-                  res1 = res1+BF16TOF32(load2)*BF16TOF32(load1);
++                  res1 = res1+TO_F32(load2)*TO_F32(load1);
+                   load3 = ptrbb[2*2+1];
+-                  res2 = res2+BF16TOF32(load0)*BF16TOF32(load3);
+-                  res3 = res3+BF16TOF32(load2)*BF16TOF32(load3);
++                  res2 = res2+TO_F32(load0)*TO_F32(load3);
++                  res3 = res3+TO_F32(load2)*TO_F32(load3);
+                   load4 = ptrba[2*3+0];
+                   load5 = ptrbb[2*3+0];
+-                  res0 = res0+BF16TOF32(load4)*BF16TOF32(load5);
++                  res0 = res0+TO_F32(load4)*TO_F32(load5);
+                   load6 = ptrba[2*3+1];
+-                  res1 = res1+BF16TOF32(load6)*BF16TOF32(load5);
++                  res1 = res1+TO_F32(load6)*TO_F32(load5);
+                   load7 = ptrbb[2*3+1];
+-                  res2 = res2+BF16TOF32(load4)*BF16TOF32(load7);
+-                  res3 = res3+BF16TOF32(load6)*BF16TOF32(load7);
++                  res2 = res2+TO_F32(load4)*TO_F32(load7);
++                  res3 = res3+TO_F32(load6)*TO_F32(load7);
+                   ptrba = ptrba+8;
+                   ptrbb = ptrbb+8;
+                }
+@@ -97,23 +98,23 @@ int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,
+                {
+                   load0 = ptrba[2*0+0];
+                   load1 = ptrbb[2*0+0];
+-                  res0 = res0+BF16TOF32(load0)*BF16TOF32(load1);
++                  res0 = res0+TO_F32(load0)*TO_F32(load1);
+                   load2 = ptrba[2*0+1];
+-                  res1 = res1+BF16TOF32(load2)*BF16TOF32(load1);
++                  res1 = res1+TO_F32(load2)*TO_F32(load1);
+                   load3 = ptrbb[2*0+1];
+-                  res2 = res2+BF16TOF32(load0)*BF16TOF32(load3);
+-                  res3 = res3+BF16TOF32(load2)*BF16TOF32(load3);
++                  res2 = res2+TO_F32(load0)*TO_F32(load3);
++                  res3 = res3+TO_F32(load2)*TO_F32(load3);
+                   ptrba = ptrba+2;
+                   ptrbb = ptrbb+2;
+                }
+              res0 = res0*ALPHA;
+-             C0[0] = F32TOBF16(BF16TOF32(C0[0])+res0);
++             C0[0] = TO_OUTPUT(TO_F32(C0[0])+res0);
+              res1 = res1*ALPHA;
+-             C0[1] = F32TOBF16(BF16TOF32(C0[1])+res1);
++             C0[1] = TO_OUTPUT(TO_F32(C0[1])+res1);
+              res2 = res2*ALPHA;
+-             C1[0] = F32TOBF16(BF16TOF32(C1[0])+res2);
++             C1[0] = TO_OUTPUT(TO_F32(C1[0])+res2);
+              res3 = res3*ALPHA;
+-             C1[1] = F32TOBF16(BF16TOF32(C1[1])+res3);
++             C1[1] = TO_OUTPUT(TO_F32(C1[1])+res3);
+              C0 = C0+2;
+              C1 = C1+2;
+           }
+@@ -126,16 +127,16 @@ int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,
+                {
+                   load0 = ptrba[0+0];
+                   load1 = ptrbb[2*0+0];
+-                  res0 = res0+BF16TOF32(load0)*BF16TOF32(load1);
++                  res0 = res0+TO_F32(load0)*TO_F32(load1);
+                   load2 = ptrbb[2*0+1];
+-                  res1 = res1+BF16TOF32(load0)*BF16TOF32(load2);
++                  res1 = res1+TO_F32(load0)*TO_F32(load2);
+                   ptrba = ptrba+1;
+                   ptrbb = ptrbb+2;
+                }
+              res0 = res0*ALPHA;
+-             C0[0] = F32TOBF16(BF16TOF32(C0[0])+res0);
++             C0[0] = TO_OUTPUT(TO_F32(C0[0])+res0);
+              res1 = res1*ALPHA;
+-             C1[0] = F32TOBF16(BF16TOF32(C1[0])+res1);
++             C1[0] = TO_OUTPUT(TO_F32(C1[0])+res1);
+              C0 = C0+1;
+              C1 = C1+1;
+           }
+@@ -157,16 +158,16 @@ int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,
+                {
+                   load0 = ptrba[2*0+0];
+                   load1 = ptrbb[0+0];
+-                  res0 = res0+BF16TOF32(load0)*BF16TOF32(load1);
++                  res0 = res0+TO_F32(load0)*TO_F32(load1);
+                   load2 = ptrba[2*0+1];
+-                  res1 = res1+BF16TOF32(load2)*BF16TOF32(load1);
++                  res1 = res1+TO_F32(load2)*TO_F32(load1);
+                   ptrba = ptrba+2;
+                   ptrbb = ptrbb+1;
+                }
+              res0 = res0*ALPHA;
+-             C0[0] = F32TOBF16(BF16TOF32(C0[0])+res0);
++             C0[0] = TO_OUTPUT(TO_F32(C0[0])+res0);
+              res1 = res1*ALPHA;
+-             C0[1] = F32TOBF16(BF16TOF32(C0[1])+res1);
++             C0[1] = TO_OUTPUT(TO_F32(C0[1])+res1);
+              C0 = C0+2;
+           }
+         for (i=0; i<(bm&1); i+=1)
+@@ -177,12 +178,12 @@ int CNAME(BLASLONG bm,BLASLONG bn,BLASLONG bk,FLOAT alpha,IFLOAT* ba,IFLOAT* bb,
+                {
+                   load0 = ptrba[0+0];
+                   load1 = ptrbb[0+0];
+-                  res0 = res0+BF16TOF32(load0)*BF16TOF32(load1);
++                  res0 = res0+TO_F32(load0)*TO_F32(load1);
+                   ptrba = ptrba+1;
+                   ptrbb = ptrbb+1;
+                }
+              res0 = res0*ALPHA;
+-             C0[0] = F32TOBF16(BF16TOF32(C0[0])+res0);
++             C0[0] = TO_OUTPUT(TO_F32(C0[0])+res0);
+              C0 = C0+1;
+           }
+         k = (bk<<0);
+diff --git a/kernel/generic/gemv_n.c b/kernel/generic/gemv_n.c
+index 1c72b07af..b7e8950c8 100644
+--- a/kernel/generic/gemv_n.c
++++ b/kernel/generic/gemv_n.c
+@@ -26,15 +26,14 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *****************************************************************************/
+ 
+ #include "common.h"
+-#include "bf16_macros.h"
++
++#include "conversion_macros.h"
+ 
+ int CNAME(BLASLONG m, BLASLONG n, FLOAT alpha, IFLOAT *a, BLASLONG lda, IFLOAT *x, BLASLONG inc_x, FLOAT beta, FLOAT *y, BLASLONG inc_y)
+ {
+-    BLASLONG i;
+     BLASLONG ix, iy;
+-    BLASLONG j;
+-    FLOAT *a_ptr;
+-#ifdef BGEMM
++    IFLOAT *a_ptr;
++#if defined(BGEMM) || defined(HGEMM)
+     float temp;
+ #else
+     FLOAT temp;
+@@ -49,18 +48,18 @@ int CNAME(BLASLONG m, BLASLONG n, FLOAT alpha, IFLOAT *a, BLASLONG lda, IFLOAT *
+         a_ptr = a;
+         for (BLASLONG j = 0; j < n; j++)
+         {
+-            temp += BF16TOF32(a_ptr[i]) * BF16TOF32(x[ix]);
++            temp += TO_F32(a_ptr[i]) * TO_F32(x[ix]);
+             ix += inc_x;
+             a_ptr += lda;
+         }
+ 
+         if (BETA == ZERO)
+         {
+-            y[iy] = F32TOBF16(ALPHA * temp);
++            y[iy] = TO_OUTPUT(ALPHA * temp);
+         }
+         else
+         {
+-            y[iy] = F32TOBF16(ALPHA * temp + BETA * BF16TOF32(y[iy]));
++            y[iy] = TO_OUTPUT(ALPHA * temp + BETA * TO_F32(y[iy]));
+         }
+ 
+         iy += inc_y;
+diff --git a/kernel/generic/gemv_t.c b/kernel/generic/gemv_t.c
+index 3b651b5c1..5124fafde 100644
+--- a/kernel/generic/gemv_t.c
++++ b/kernel/generic/gemv_t.c
+@@ -26,15 +26,16 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *****************************************************************************/
+ 
+ #include "common.h"
+-#include "bf16_macros.h"
++
++#include "conversion_macros.h"
+ 
+ int CNAME(BLASLONG m, BLASLONG n, FLOAT alpha, IFLOAT *a, BLASLONG lda, IFLOAT *x, BLASLONG inc_x, FLOAT beta, FLOAT *y, BLASLONG inc_y)
+ {
+     BLASLONG i;
+     BLASLONG ix, iy;
+     BLASLONG j;
+-    FLOAT *a_ptr;
+-#ifdef BGEMM
++    IFLOAT *a_ptr;
++#if defined(BGEMM) || defined(HGEMM)
+     float temp;
+ #else
+     FLOAT temp;
+@@ -49,10 +50,17 @@ int CNAME(BLASLONG m, BLASLONG n, FLOAT alpha, IFLOAT *a, BLASLONG lda, IFLOAT *
+         ix = 0;
+         for (i = 0; i < m; i++)
+         {
+-            temp += BF16TOF32(a_ptr[i]) * BF16TOF32(x[ix]);
++            temp += TO_F32(a_ptr[i]) * TO_F32(x[ix]);
+             ix += inc_x;
+         }
+-        y[iy] += F32TOBF16(ALPHA * temp);
++        if (BETA == ZERO)
++        {
++            y[iy] = TO_OUTPUT(ALPHA * temp);
++        }
++        else
++        {
++            y[iy] = TO_OUTPUT(ALPHA * temp + BETA * TO_F32(y[iy]));
++        }
+         iy += inc_y;
+         a_ptr += lda;
+     }
+diff --git a/kernel/power/dgemv_n_microk_power10.c b/kernel/power/dgemv_n_microk_power10.c
+index 5a67c3648..b7701bdb6 100644
+--- a/kernel/power/dgemv_n_microk_power10.c
++++ b/kernel/power/dgemv_n_microk_power10.c
+@@ -466,7 +466,7 @@ static void dgemv_kernel_4x8 (long n, double *ap, long lda, double *x, double *y
+        "=b" (tmp)
+      :
+        "m" (*(double (*)[4]) x),
+-       "m" (*(double (*)[]) ap),
++       "m" (*(double (*)[4]) ap),
+        "d" (alpha),	// 14
+        "r" (x),		// 15
+        "3" (ap),	// 16
+diff --git a/kernel/riscv64/KERNEL.RISCV64_ZVL256B b/kernel/riscv64/KERNEL.RISCV64_ZVL256B
+index c8be1c637..c48095bb2 100644
+--- a/kernel/riscv64/KERNEL.RISCV64_ZVL256B
++++ b/kernel/riscv64/KERNEL.RISCV64_ZVL256B
+@@ -256,6 +256,8 @@ SHGEMMOTCOPYOBJ =  shgemm_otcopy$(TSUFFIX).$(SUFFIX)
+ ifndef SHGEMM_BETA
+ SHGEMM_BETA =  gemm_beta_rvv.c
+ endif
++SHGEMVNKERNEL = sbgemv_n_vector.c
++SHGEMVTKERNEL = sbgemv_t_vector.c
+ endif
+ 
+ ifeq ($(BUILD_BFLOAT16), 1)
+@@ -283,6 +285,8 @@ SBGEMMOTCOPYOBJ =  sbgemm_otcopy$(TSUFFIX).$(SUFFIX)
+ ifndef SBGEMM_BETA
+ SBGEMM_BETA =  gemm_beta_rvv.c
+ endif
++SBGEMVNKERNEL = sbgemv_n_vector.c
++SBGEMVTKERNEL = sbgemv_t_vector.c
+ endif
+ 
+ SAXPBYKERNEL  = axpby_vector_v2.c
+diff --git a/kernel/riscv64/sbgemv_n_vector.c b/kernel/riscv64/sbgemv_n_vector.c
+new file mode 100644
+index 000000000..94b9488cf
+--- /dev/null
++++ b/kernel/riscv64/sbgemv_n_vector.c
+@@ -0,0 +1,130 @@
++/***************************************************************************
++Copyright (c) 2020, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#define FLOAT_V_T               vfloat32m8_t
++#define VLEV_FLOAT              RISCV_RVV(vle32_v_f32m8)
++#define VLSEV_FLOAT             RISCV_RVV(vlse32_v_f32m8)
++#define VSEV_FLOAT              RISCV_RVV(vse32_v_f32m8)
++#define VSSEV_FLOAT             RISCV_RVV(vsse32_v_f32m8)
++#define VFMULVF_FLOAT           RISCV_RVV(vfmul_vf_f32m8)
++#define VFMVVF_FLOAT            RISCV_RVV(vfmv_v_f_f32m8)
++
++#define VSETVL(n)               RISCV_RVV(vsetvl_e16m4)(n)
++
++#if defined(HFLOAT16)
++#define IFLOAT_V_T              vfloat16m4_t
++#define VLEV_IFLOAT             RISCV_RVV(vle16_v_f16m4)
++#define VFMACCVF_FLOAT          RISCV_RVV(vfwmacc_vf_f32m8)
++#else
++#define IFLOAT_V_T              vbfloat16m4_t
++#define VLEV_IFLOAT             RISCV_RVV(vle16_v_bf16m4)
++#define VFMACCVF_FLOAT          RISCV_RVV(vfwmaccbf16_vf_f32m8)
++#endif
++
++int CNAME(BLASLONG m, BLASLONG n, FLOAT alpha, IFLOAT *a, BLASLONG lda, IFLOAT *x, BLASLONG inc_x, FLOAT beta, FLOAT *y, BLASLONG inc_y)
++{
++    if (n < 0) return(0);
++
++    IFLOAT *a_ptr, temp;
++    FLOAT *y_ptr;
++    BLASLONG i, j, vl;
++    IFLOAT_V_T va;
++    FLOAT_V_T vy;
++
++    y_ptr = y;
++    if (inc_y == 1) {
++        if (beta == 0.0) {
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VFMVVF_FLOAT(0.0, vl);
++                VSEV_FLOAT(y_ptr, vy, vl);
++                y_ptr += vl;
++            }
++        } else if (beta != 1.0) {
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLEV_FLOAT(y_ptr, vl);
++                vy = VFMULVF_FLOAT(vy, beta, vl);
++                VSEV_FLOAT(y_ptr, vy, vl);
++                y_ptr += vl;
++            }
++        }
++        for (j = 0; j < n; j++) {
++            temp = (IFLOAT)(alpha * (FLOAT)(x[0]));
++            y_ptr = y;
++            a_ptr = a;
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLEV_FLOAT(y_ptr, vl);
++                va = VLEV_IFLOAT(a_ptr, vl);
++                vy = VFMACCVF_FLOAT(vy, temp, va, vl);
++                VSEV_FLOAT(y_ptr, vy, vl);
++                y_ptr += vl;
++                a_ptr += vl;
++            }
++            x += inc_x;
++            a += lda;
++        }
++    } else {
++        BLASLONG stride_y = inc_y * sizeof(FLOAT);
++        if (beta == 0.0) {
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VFMVVF_FLOAT(0.0, vl);
++                VSSEV_FLOAT(y_ptr, stride_y, vy, vl);
++                y_ptr += vl * inc_y;
++            }
++        } else if (beta != 1.0) {
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLSEV_FLOAT(y_ptr, stride_y, vl);
++                vy = VFMULVF_FLOAT(vy, beta, vl);
++                VSSEV_FLOAT(y_ptr, stride_y, vy, vl);
++                y_ptr += vl * inc_y;
++            }
++        }
++        for (j = 0; j < n; j++) {
++            temp = (IFLOAT)(alpha * (FLOAT)(x[0]));
++            y_ptr = y;
++            a_ptr = a;
++            for (i = m; i > 0; i -= vl) {
++                vl = VSETVL(i);
++                vy = VLSEV_FLOAT(y_ptr, stride_y, vl);
++                va = VLEV_IFLOAT(a_ptr, vl);
++                vy = VFMACCVF_FLOAT(vy, temp, va, vl);
++                VSSEV_FLOAT(y_ptr, stride_y, vy, vl);
++                y_ptr += vl * inc_y;
++                a_ptr += vl;
++            }
++            x += inc_x;
++            a += lda;
++        }
++    }
++    return(0);
++}
+diff --git a/kernel/riscv64/sbgemv_t_vector.c b/kernel/riscv64/sbgemv_t_vector.c
+new file mode 100644
+index 000000000..f537ca4ea
+--- /dev/null
++++ b/kernel/riscv64/sbgemv_t_vector.c
+@@ -0,0 +1,134 @@
++/***************************************************************************
++Copyright (c) 2013, The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++
++#include "common.h"
++
++#define FLOAT_V_T               vfloat32m8_t
++#define FLOAT_V_T_M1            vfloat32m1_t
++#define VLEV_FLOAT              RISCV_RVV(vle32_v_f32m8)
++#define VLSEV_FLOAT             RISCV_RVV(vlse32_v_f32m8)
++
++#define VSETVL(n)               RISCV_RVV(vsetvl_e16m4)(n)
++
++#if defined(HFLOAT16)
++#define IFLOAT_V_T              vfloat16m4_t
++#define VLEV_IFLOAT             RISCV_RVV(vle16_v_f16m4)
++#define VLSEV_IFLOAT            RISCV_RVV(vlse16_v_f16m4)
++#define VFMACCVV_FLOAT(a,b,c,d) RISCV_RVV(vfwmul_vv_f32m8)(b,c,d)
++#else
++#define IFLOAT_V_T              vbfloat16m4_t
++#define VLEV_IFLOAT             RISCV_RVV(vle16_v_bf16m4)
++#define VLSEV_IFLOAT            RISCV_RVV(vlse16_v_bf16m4)
++#define VFMACCVV_FLOAT          RISCV_RVV(vfwmaccbf16_vv_f32m8)
++#endif
++
++#ifdef RISCV_0p10_INTRINSICS
++#define VFREDSUM_FLOAT(va, vb, gvl) vfredusum_vs_f32m8_f32m1(v_res, va, vb, gvl)
++#else
++#define VFREDSUM_FLOAT          RISCV_RVV(vfredusum_vs_f32m8_f32m1)
++#endif
++#define VFMVVF_FLOAT            RISCV_RVV(vfmv_v_f_f32m8)
++#define VFMVVF_FLOAT_M1         RISCV_RVV(vfmv_v_f_f32m1)
++
++int CNAME(BLASLONG m, BLASLONG n, FLOAT alpha, IFLOAT *a, BLASLONG lda, IFLOAT *x, BLASLONG inc_x, FLOAT beta, FLOAT *y, BLASLONG inc_y)
++{
++    BLASLONG i = 0, j = 0, k = 0;
++    BLASLONG ix = 0, iy = 0;
++    IFLOAT *a_ptr = a;
++    FLOAT temp;
++
++    IFLOAT_V_T va, vx;
++#if !defined(HFLOAT16)
++    FLOAT_V_T vz;
++#endif
++    FLOAT_V_T vr;
++    BLASLONG gvl = 0;
++    FLOAT_V_T_M1 v_res;
++
++    if (inc_x == 1) {
++        for (i = 0; i < n; i++) {
++            v_res = VFMVVF_FLOAT_M1(0, 1);
++            gvl = VSETVL(m);
++            j = 0;
++#if !defined(HFLOAT16)
++            vz = VFMVVF_FLOAT(0, gvl);
++#endif
++            for (k = 0; k < m/gvl; k++) {
++                va = VLEV_IFLOAT(&a_ptr[j], gvl);
++                vx = VLEV_IFLOAT(&x[j], gvl);
++                vr = VFMACCVV_FLOAT(vz, va, vx, gvl);           // could vfmacc here and reduce outside loop
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);         // but that reordering diverges far enough from scalar path to make tests fail
++                j += gvl;
++            }
++            if (j < m) {
++                gvl = VSETVL(m-j);
++                va = VLEV_IFLOAT(&a_ptr[j], gvl);
++                vx = VLEV_IFLOAT(&x[j], gvl);
++                vr = VFMACCVV_FLOAT(vz, va, vx, gvl);
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
++            }
++            temp = (FLOAT)EXTRACT_FLOAT(v_res);
++            y[iy] = y[iy] * beta + alpha * temp;
++
++            iy += inc_y;
++            a_ptr += lda;
++        }
++    } else {
++        BLASLONG stride_x = inc_x * sizeof(IFLOAT);
++        for (i = 0; i < n; i++) {
++            v_res = VFMVVF_FLOAT_M1(0, 1);
++            gvl = VSETVL(m);
++            j = 0;
++            ix = 0;
++#if !defined(HFLOAT16)
++            vz = VFMVVF_FLOAT(0, gvl);
++#endif
++            for (k = 0; k < m/gvl; k++) {
++                va = VLEV_IFLOAT(&a_ptr[j], gvl);
++                vx = VLSEV_IFLOAT(&x[ix], stride_x, gvl);
++                vr = VFMACCVV_FLOAT(vz, va, vx, gvl);
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
++                j += gvl;
++                ix += inc_x * gvl;
++            }
++            if (j < m) {
++                gvl = VSETVL(m-j);
++                va = VLEV_IFLOAT(&a_ptr[j], gvl);
++                vx = VLSEV_IFLOAT(&x[ix], stride_x, gvl);
++                vr = VFMACCVV_FLOAT(vz, va, vx, gvl);
++                v_res = VFREDSUM_FLOAT(vr, v_res, gvl);
++            }
++            temp = (FLOAT)EXTRACT_FLOAT(v_res);
++            y[iy] = y[iy] * beta + alpha * temp;
++
++            iy += inc_y;
++            a_ptr += lda;
++        }
++    }
++
++    return (0);
++}
+diff --git a/kernel/setparam-ref.c b/kernel/setparam-ref.c
+index df455cd5d..26e09ca84 100644
+--- a/kernel/setparam-ref.c
++++ b/kernel/setparam-ref.c
+@@ -56,6 +56,24 @@ gotoblas_t TABLE_NAME = {
+ 
+   GEMM_DEFAULT_OFFSET_A, GEMM_DEFAULT_OFFSET_B, GEMM_DEFAULT_ALIGN,
+ 
++#ifdef BUILD_HFLOAT16
++  0, 0, 0,
++  SHGEMM_DEFAULT_UNROLL_M, SHGEMM_DEFAULT_UNROLL_N,
++#ifdef SHGEMM_DEFAULT_UNROLL_MN
++ SHGEMM_DEFAULT_UNROLL_MN,
++#else
++ MAX(SHGEMM_DEFAULT_UNROLL_M, SHGEMM_DEFAULT_UNROLL_N),
++#endif
++  shgemm_kernelTS, shgemm_betaTS,
++#if SHGEMM_DEFAULT_UNROLL_M != SHGEMM_DEFAULT_UNROLL_N
++  shgemm_incopyTS, shgemm_itcopyTS,
++#else
++  shgemm_oncopyTS, shgemm_otcopyTS,
++#endif
++  shgemm_oncopyTS, shgemm_otcopyTS,
++  shgemv_nTS, shgemv_tTS,
++#endif
++
+ #ifdef BUILD_BFLOAT16
+   0, 0, 0,
+   BGEMM_DEFAULT_UNROLL_M, BGEMM_DEFAULT_UNROLL_N,
+@@ -142,23 +160,6 @@ gotoblas_t TABLE_NAME = {
+ #endif
+ #endif
+ 
+-#ifdef BUILD_HFLOAT16
+-  0, 0, 0,
+-  SHGEMM_DEFAULT_UNROLL_M, SHGEMM_DEFAULT_UNROLL_N,
+-#ifdef SHGEMM_DEFAULT_UNROLL_MN
+- SHGEMM_DEFAULT_UNROLL_MN,
+-#else
+- MAX(SHGEMM_DEFAULT_UNROLL_M, SHGEMM_DEFAULT_UNROLL_N),
+-#endif
+-  shgemm_kernelTS, shgemm_betaTS,
+-#if SHGEMM_DEFAULT_UNROLL_M != SHGEMM_DEFAULT_UNROLL_N
+-  shgemm_incopyTS, shgemm_itcopyTS,
+-#else
+-  shgemm_oncopyTS, shgemm_otcopyTS,
+-#endif
+-  shgemm_oncopyTS, shgemm_otcopyTS,
+-#endif
+-
+ #if ( BUILD_SINGLE==1) || (BUILD_DOUBLE==1) || (BUILD_COMPLEX==1) || (BUILD_COMPLEX16==1)
+   0, 0, 0,
+   SGEMM_DEFAULT_UNROLL_M, SGEMM_DEFAULT_UNROLL_N,
+@@ -218,6 +219,10 @@ gotoblas_t TABLE_NAME = {
+   sgemm_direct_alpha_betaTS,
+   ssymm_direct_alpha_betaLUTS,
+   ssymm_direct_alpha_betaLLTS,
++  strmm_direct_LNUNTS,
++  strmm_direct_LNLNTS,
++  strmm_direct_LTUNTS,
++  strmm_direct_LTLNTS,
+ #endif
+ 
+   sgemm_kernelTS, sgemm_betaTS,
+diff --git a/param.h b/param.h
+index 79b2bbcc6..7b72df186 100644
+--- a/param.h
++++ b/param.h
+@@ -3867,6 +3867,7 @@ Until then, just keep it different than DGEMM_DEFAULT_UNROLL_N to keep copy rout
+ #if defined(ARMV9SME) /* ARMv9 SME */
+ #define USE_SGEMM_KERNEL_DIRECT 1
+ #define USE_SSYMM_KERNEL_DIRECT 1
++#define USE_STRMM_KERNEL_DIRECT 1
+ #endif /* ARMv9 SME */
+ 
+ #if defined(ARMV5)
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index f874fa5ea..e3491d7f1 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -36,6 +36,28 @@ foreach(test_bin ${OpenBLAS_Tests})
+ target_link_libraries(${test_bin} ${OpenBLAS_LIBNAME})
+ endforeach()
+ 
++if (BUILD_BFLOAT16)
++	add_executable(test_bgemm compare_sgemm_bgemm.c)
++	target_compile_definitions(test_bgemm PUBLIC -DIBFLOAT16 -DOBFLOAT16)
++	target_link_libraries(test_bgemm ${OpenBLAS_LIBNAME})
++	add_executable(test_bgemv compare_sgemv_bgemv.c)
++	target_compile_definitions(test_bgemv PUBLIC -DIBFLOAT16 -DOBFLOAT16)
++	target_link_libraries(test_bgemv ${OpenBLAS_LIBNAME})
++	add_executable(test_sbgemm compare_sgemm_sbgemm.c)
++	target_compile_definitions(test_sbgemm PUBLIC -DIBFLOAT16)
++	target_link_libraries(test_sbgemm ${OpenBLAS_LIBNAME})
++	add_executable(test_sbgemv compare_sgemv_sbgemv.c)
++	target_compile_definitions(test_sbgemv PUBLIC -DIBFLOAT16)
++	target_link_libraries(test_sbgemv ${OpenBLAS_LIBNAME})
++endif()
++
++if (BUILD_HFLOAT16)
++	add_executable(test_shgemm compare_sgemm_shgemm.c)
++	target_link_libraries(test_shgemm ${OpenBLAS_LIBNAME})
++	add_executable(test_shgemv compare_sgemv_shgemv.c)
++	target_link_libraries(test_shgemv ${OpenBLAS_LIBNAME})
++endif()
++
+ # $1 exec, $2 input, $3 output_result
+ if(WIN32)
+ FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_helper.ps1
+@@ -94,3 +116,21 @@ add_test(NAME "${float_type}blas3_3m"
+ endif()
+ endif()
+ endforeach()
++
++if (BUILD_BFLOAT16)
++	add_test(NAME "bgemm" 
++	COMMAND $<TARGET_FILE:test_bgemm>)
++	add_test(NAME "bgemv" 
++	COMMAND $<TARGET_FILE:test_bgemv>)
++	add_test(NAME "sbgemm" 
++	COMMAND $<TARGET_FILE:test_sbgemm>)
++	add_test(NAME "sbgemv" 
++	COMMAND $<TARGET_FILE:test_sbgemv>)
++endif()
++
++if (BUILD_HFLOAT16)
++	add_test(NAME "shgemm" 
++	COMMAND $<TARGET_FILE:test_shgemm>)
++	add_test(NAME "shgemv" 
++	COMMAND $<TARGET_FILE:test_shgemv>)
++endif()
+diff --git a/test/Makefile b/test/Makefile
+index 58b6710c6..8b69976f7 100644
+--- a/test/Makefile
++++ b/test/Makefile
+@@ -34,7 +34,7 @@ ifneq (, $(filter $(CORE),LOONGSON3R3 LOONGSON3R4))
+ endif
+         override FFLAGS += -fno-tree-vectorize
+ endif
+-override CFLAGS += -std=c11 -Wall -Werror
++# override CFLAGS += -std=c11 -Wall -Werror
+ 
+ SUPPORT_GEMM3M = 0
+ 
+@@ -119,6 +119,9 @@ endif
+ endif
+ endif
+ 
++ifeq ($(BUILD_HFLOAT16), 1)
++SH2 = test_shgemv
++endif
+ ifeq ($(BUILD_BFLOAT16), 1)
+ BB2 = test_bgemv
+ B2 = test_sbgemv
+@@ -136,7 +139,7 @@ ifeq ($(BUILD_COMPLEX16),1)
+ Z2=zblat2
+ endif
+ 
+-level2: $(BB2) $(B2) $(S2) $(D2) $(C2) $(Z2)
++level2: $(SH2) $(BB2) $(B2) $(S2) $(D2) $(C2) $(Z2)
+ 
+ 
+ ifneq ($(CROSS), 1)
+@@ -147,6 +150,10 @@ ifeq ($(BUILD_BFLOAT16),1)
+ 	OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 ./test_sbgemv > SBBLAT2.SUMM
+ 	@$(GREP) -q FATAL SBBLAT2.SUMM && cat SBBLAT2.SUMM || exit 0
+ endif
++ifeq ($(BUILD_HFLOAT16),1)
++	OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 ./test_shgemv > SHBLAT2.SUMM
++	@$(GREP) -q FATAL SHBLAT2.SUMM && cat SHBLAT2.SUMM || exit 0
++endif
+ ifeq ($(BUILD_SINGLE),1)
+ 	OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 ./sblat2 < ./sblat2.dat
+ 	@$(GREP) -q FATAL SBLAT2.SUMM && cat SBLAT2.SUMM || exit 0
+@@ -172,6 +179,10 @@ ifeq ($(BUILD_BFLOAT16),1)
+ 	OMP_NUM_THREADS=2 ./test_sbgemv > SBBLAT2.SUMM
+ 	@$(GREP) -q FATAL SBBLAT2.SUMM && cat SBBLAT2.SUMM || exit 0
+ endif
++ifeq ($(BUILD_HFLOAT16),1)
++	OMP_NUM_THREADS=2 ./test_shgemv > SHBLAT2.SUMM
++	@$(GREP) -q FATAL SHBLAT2.SUMM && cat SHBLAT2.SUMM || exit 0
++endif
+ ifeq ($(BUILD_SINGLE),1)
+ 	OMP_NUM_THREADS=2 ./sblat2 < ./sblat2.dat
+ 	@$(GREP) -q FATAL SBLAT2.SUMM && cat SBLAT2.SUMM || exit 0
+@@ -195,6 +206,10 @@ ifeq ($(BUILD_BFLOAT16),1)
+ 	OMP_NUM_THREADS=2 ./test_sbgemv > SBBLAT2.SUMM
+ 	@$(GREP) -q FATAL SBBLAT2.SUMM && cat SBBLAT2.SUMM || exit 0
+ endif
++ifeq ($(BUILD_HFLOAT16),1)
++	OMP_NUM_THREADS=2 ./test_shgemv > SHBLAT2.SUMM
++	@$(GREP) -q FATAL SHBLAT2.SUMM && cat SHBLAT2.SUMM || exit 0
++endif
+ ifeq ($(BUILD_SINGLE),1)
+ 	OPENBLAS_NUM_THREADS=2 ./sblat2 < ./sblat2.dat
+ 	@$(GREP) -q FATAL SBLAT2.SUMM && cat SBLAT2.SUMM || exit 0
+@@ -219,6 +234,9 @@ ifeq ($(BUILD_BFLOAT16),1)
+ BF3= test_bgemm
+ B3 = test_sbgemm
+ endif
++ifeq ($(BUILD_HFLOAT16),1)
++H3 = test_shgemm
++endif
+ ifeq ($(BUILD_SINGLE),1)
+ S3=sblat3
+ endif
+@@ -242,9 +260,9 @@ endif
+ 
+ 
+ ifeq ($(SUPPORT_GEMM3M),1)
+-level3: $(BF3) $(B3) $(S3) $(D3) $(C3) $(Z3) level3_3m
++level3: $(BF3) $(B3) $(H3) $(S3) $(D3) $(C3) $(Z3) level3_3m
+ else
+-level3: $(BF3) $(B3) $(S3) $(D3) $(C3) $(Z3)
++level3: $(BF3) $(B3) $(H3) $(S3) $(D3) $(C3) $(Z3)
+ endif
+ 
+ ifneq ($(CROSS), 1)
+@@ -438,6 +456,15 @@ test_sbgemv : compare_sgemv_sbgemv.c ../$(LIBNAME)
+ 	$(CC) $(CLDFLAGS) -DIBFLOAT16 -o test_sbgemv compare_sgemv_sbgemv.c ../$(LIBNAME) $(EXTRALIB) $(CEXTRALIB)
+ endif
+ 
++ifeq ($(BUILD_HFLOAT16),1)
++test_shgemm : compare_sgemm_shgemm.c test_helpers.h ../$(LIBNAME)
++	$(CC) $(CLDFLAGS) -DIHFLOAT16 -o test_shgemm compare_sgemm_shgemm.c ../$(LIBNAME) $(EXTRALIB) $(CEXTRALIB)
++
++test_shgemv : compare_sgemv_shgemv.c ../$(LIBNAME)
++	$(CC) $(CLDFLAGS) -o test_shgemv compare_sgemv_shgemv.c ../$(LIBNAME) $(EXTRALIB) $(CEXTRALIB)
++endif
++
++
+ ifeq ($(BUILD_COMPLEX),1)
+ cblat3_3m : cblat3_3m.$(SUFFIX) ../$(LIBNAME)
+ 	$(FC) $(FLDFLAGS) -o cblat3_3m cblat3_3m.$(SUFFIX) ../$(LIBNAME) $(EXTRALIB) $(CEXTRALIB)
+@@ -454,7 +481,7 @@ clean:
+ 	@rm -f *.$(SUFFIX) *.$(PSUFFIX) gmon.$(SUFFIX)ut *.SUMM *.cxml *.exe *.pdb *.dwf \
+ 	sblat1 dblat1 cblat1 zblat1 \
+ 	sblat2 dblat2 cblat2 zblat2 \
+-	test_bgemm test_bgemv test_sbgemm test_sbgemv sblat3 dblat3 cblat3 zblat3 \
++	test_bgemm test_bgemv test_sbgemm test_sbgemv test_shgemm test_shgemv sblat3 dblat3 cblat3 zblat3 \
+ 	sblat1p dblat1p cblat1p zblat1p \
+ 	sblat2p dblat2p cblat2p zblat2p \
+ 	sblat3p dblat3p cblat3p zblat3p \
+diff --git a/test/compare_sgemm_bgemm.c b/test/compare_sgemm_bgemm.c
+index be7c538b6..1fe4501e3 100644
+--- a/test/compare_sgemm_bgemm.c
++++ b/test/compare_sgemm_bgemm.c
+@@ -44,7 +44,7 @@ main (int argc, char *argv[])
+   int ret = 0;
+   int loop = BGEMM_LARGEST;
+   char transA = 'N', transB = 'N';
+-  float alpha = 1.0, beta = 0.0;
++  float alpha = 1.0, beta = 1.0;
+   bfloat16 alpha_bf16;
+   sbstobf16_(&one, &alpha, &one, &alpha_bf16, &one);
+   bfloat16 beta_bf16;
+@@ -94,9 +94,15 @@ main (int argc, char *argv[])
+         transB = 'T';
+       }
+ 
+-      memset(CC, 0, m * n * sizeof(bfloat16));
+-      memset(DD, 0, m * n * sizeof(FLOAT));
+-      memset(C, 0, m * n * sizeof(FLOAT));
++      for (j = 0; j < m; j++)
++      {
++        for (i = 0; i < n; i++)
++        {
++          C[j * n + i] = 100.0;
++          DD[j * n + i] = 100.0;
++          sbstobf16_(&one, &C[j * n + i], &one, &CC[j * n + i], &one);
++        }
++      }
+ 
+       SGEMM (&transA, &transB, &m, &n, &k, &alpha, A,
+         &m, B, &k, &beta, C, &m);
+@@ -152,7 +158,8 @@ main (int argc, char *argv[])
+   }
+ 
+   if (ret != 0) {
+-    fprintf (stderr, "FATAL ERROR BGEMM - Return code: %d\n", ret);
++    fprintf(stderr, "BGEMM FAILURES: %d\n", ret);
++    return 1;
+   }
+ 
+   return ret;
+diff --git a/test/compare_sgemm_sbgemm.c b/test/compare_sgemm_sbgemm.c
+index 489222516..e7a145f2d 100644
+--- a/test/compare_sgemm_sbgemm.c
++++ b/test/compare_sgemm_sbgemm.c
+@@ -140,7 +140,8 @@ main (int argc, char *argv[])
+   }
+ 
+   if (ret != 0) {
+-    fprintf (stderr, "FATAL ERROR SBGEMM - Return code: %d\n", ret);
++    fprintf(stderr, "SBGEMM FAILURES: %d\n", ret);
++    return 1;
+   }
+ 
+   return ret;
+diff --git a/test/compare_sgemm_shgemm.c b/test/compare_sgemm_shgemm.c
+new file mode 100644
+index 000000000..7a97a0669
+--- /dev/null
++++ b/test/compare_sgemm_shgemm.c
+@@ -0,0 +1,234 @@
++/***************************************************************************
++Copyright (c) 2020,2025 The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++#include <stdio.h>
++#include <stdint.h>
++#include "../common.h"
++
++#include "test_helpers.h"
++
++#define SGEMM   BLASFUNC(sgemm)
++#define SHGEMM   BLASFUNC(shgemm)
++#define SHGEMM_LARGEST  256
++
++int
++main (int argc, char *argv[])
++{
++  blasint m, n, k;
++  int i, j, l;
++  blasint x, y;
++  int ret = 0;
++  int rret = 0;
++  int loop = SHGEMM_LARGEST;
++  char transA = 'N', transB = 'N';
++  float alpha = 1.0, beta = 0.0;
++  int xvals[6]={3,24,55,71,SHGEMM_LARGEST/2,SHGEMM_LARGEST};
++
++  for (x = 0; x <= loop; x++)
++  {
++    if ((x > 100) && (x != SHGEMM_LARGEST)) continue;
++    m = k = n = x;
++    float *A = (float *)malloc_safe(m * k * sizeof(FLOAT));
++    float *B = (float *)malloc_safe(k * n * sizeof(FLOAT));
++    float *C = (float *)malloc_safe(m * n * sizeof(FLOAT));
++    _Float16 *AA = (_Float16 *)malloc_safe(m * k * sizeof(_Float16));
++    _Float16 *BB = (_Float16 *)malloc_safe(k * n * sizeof(_Float16));
++    float *DD = (float *)malloc_safe(m * n * sizeof(FLOAT));
++    float *CC = (float *)malloc_safe(m * n * sizeof(FLOAT));
++    if ((A == NULL) || (B == NULL) || (C == NULL) || (AA == NULL) || (BB == NULL) ||
++        (DD == NULL) || (CC == NULL))
++      return 1;
++
++    for (j = 0; j < m; j++)
++    {
++      for (i = 0; i < k; i++)
++      {
++        A[j * k + i] = ((FLOAT) rand () / (FLOAT) RAND_MAX) + 0.5;
++        AA[j * k + i] = (_Float16) A[j * k + i];
++      }
++    }
++    for (j = 0; j < n; j++)
++    {
++      for (i = 0; i < k; i++)
++      {
++        B[j * k + i] = ((FLOAT) rand () / (FLOAT) RAND_MAX) + 0.5;
++        BB[j * k + i] = (_Float16) B[j * k + i];
++      }
++    }
++    for (y = 0; y < 4; y++)
++    {
++      if ((y == 0) || (y == 2)) {
++        transA = 'N';
++      } else {
++        transA = 'T';
++      }
++      if ((y == 0) || (y == 1)) {
++        transB = 'N';
++      } else {
++        transB = 'T';
++      }
++
++      memset(CC, 0, m * n * sizeof(FLOAT));
++      memset(DD, 0, m * n * sizeof(FLOAT));
++      memset(C, 0, m * n * sizeof(FLOAT));
++
++      SGEMM (&transA, &transB, &m, &n, &k, &alpha, A,
++        &m, B, &k, &beta, C, &m);
++      SHGEMM (&transA, &transB, &m, &n, &k, &alpha, (_Float16*) AA,
++        &m, (_Float16*)BB, &k, &beta, CC, &m);
++
++      for (i = 0; i < n; i++)
++        for (j = 0; j < m; j++)
++        {
++          for (l = 0; l < k; l++)
++            if (transA == 'N' && transB == 'N')
++            {
++              DD[i * m + j] +=
++                (float) AA[l * m + j] * (float)BB[l + k * i];
++            } else if (transA == 'T' && transB == 'N')
++            {
++              DD[i * m + j] +=
++                (float)AA[k * j + l] * (float)BB[l + k * i];
++            } else if (transA == 'N' && transB == 'T')
++            {
++              DD[i * m + j] +=
++                (float)AA[l * m + j] * (float)BB[i + l * n];
++            } else if (transA == 'T' && transB == 'T')
++            {
++              DD[i * m + j] +=
++                (float)AA[k * j + l] * (float)BB[i + l * n];
++            }
++          if (!is_close(CC[i * m + j], C[i * m + j], 0.01, 0.001)) {
++		  fprintf(stderr,"CC %f C %f \n",(float)CC[i*m+j],C[i*m+j]);
++            ret++;
++          }
++          if (!is_close(CC[i * m + j], DD[i * m + j], 0.001, 0.0001)) {
++		  fprintf(stderr,"CC %f DD  %f \n",(float)CC[i*m+j],(float)DD[i*m+j]);
++            ret++;
++          }
++        }
++    }
++    free(A);
++    free(B);
++    free(C);
++    free(AA);
++    free(BB);
++    free(DD);
++    free(CC);
++  }
++  if (ret != 0) {
++    fprintf(stderr, "SHGEMM FAILURES: %d!!!\n", ret);
++    return 1;
++  }
++
++ 
++  for (loop = 0; loop<6; loop++) {
++  x=xvals[loop];
++  for (alpha=0.;alpha<=1.;alpha+=0.5)  
++  {
++   for (beta = 0.0; beta <=1.; beta+=0.5) {
++   
++    m = k = n = x;
++    float *A = (float *)malloc_safe(m * k * sizeof(FLOAT));
++    float *B = (float *)malloc_safe(k * n * sizeof(FLOAT));
++    float *C = (float *)malloc_safe(m * n * sizeof(FLOAT));
++    _Float16 *AA = (_Float16 *)malloc_safe(m * k * sizeof(_Float16));
++    _Float16 *BB = (_Float16 *)malloc_safe(k * n * sizeof(_Float16));
++    float *CC = (float *)malloc_safe(m * n * sizeof(FLOAT));
++    if ((A == NULL) || (B == NULL) || (C == NULL) || (AA == NULL) || (BB == NULL) ||
++       (CC == NULL))
++      return 1;
++
++    for (j = 0; j < m; j++)
++    {
++      for (i = 0; i < k; i++)
++      {
++        A[j * k + i] = ((FLOAT) rand () / (FLOAT) RAND_MAX) + 0.5;
++        AA[j * k + i] = (_Float16) A[j * k + i];
++      }
++    }
++    for (j = 0; j < n; j++)
++    {
++      for (i = 0; i < k; i++)
++      {
++        B[j * k + i] = ((FLOAT) rand () / (FLOAT) RAND_MAX) + 0.5;
++        BB[j * k + i] = (_Float16) B[j * k + i];
++      }
++    }
++
++    for (y = 0; y < 4; y++)
++    {
++      if ((y == 0) || (y == 2)) {
++        transA = 'N';
++      } else {
++        transA = 'T';
++      }
++      if ((y == 0) || (y == 1)) {
++        transB = 'N';
++      } else {
++        transB = 'T';
++      }
++
++      memset(CC, 0, m * n * sizeof(FLOAT));
++      memset(C, 0, m * n * sizeof(FLOAT));
++
++      SGEMM (&transA, &transB, &m, &n, &k, &alpha, A,
++        &m, B, &k, &beta, C, &m);
++      SHGEMM (&transA, &transB, &m, &n, &k, &alpha, (_Float16*) AA,
++        &m, (_Float16*)BB, &k, &beta, CC, &m);
++
++      for (i = 0; i < n; i++)
++        for (j = 0; j < m; j++)
++        {
++          if (!is_close(CC[i * m + j], C[i * m + j], 0.01, 0.001)) {
++            ret++;
++          }
++        }
++    }
++    free(A);
++    free(B);
++    free(C);
++    free(AA);
++    free(BB);
++    free(CC);
++
++    if (ret != 0) {
++/*
++ * fprintf(stderr, "SHGEMM FAILURES FOR n=%d, alpha=%f beta=%f : %d\n", x, alpha, beta, ret);
++   */
++      rret++;
++      ret=0;
++/*    }  else {
++      fprintf(stderr, "SHGEMM SUCCEEDED FOR n=%d, alpha=%f beta=%f : %d\n", x, alpha, beta, ret);
++*/
++    }
++  }
++  
++  }
++  }
++  if (rret > 0) return(1);
++  return(0);
++}
+diff --git a/test/compare_sgemv_bgemv.c b/test/compare_sgemv_bgemv.c
+index 014c7da50..d9dc30d9a 100644
+--- a/test/compare_sgemv_bgemv.c
++++ b/test/compare_sgemv_bgemv.c
+@@ -147,7 +147,10 @@ int main(int argc, char *argv[])
+     } // alpha
+   } // beta
+ 
+-  if (ret != 0)
+-    fprintf(stderr, "FATAL ERROR BGEMV - Return code: %d\n", ret);
++  if (ret != 0) {
++    fprintf(stderr, "BGEMV FAILURES: %d\n", ret);
++    return 1;
++  }
++
+   return ret;
+ }
+diff --git a/test/compare_sgemv_sbgemv.c b/test/compare_sgemv_sbgemv.c
+index 15cdce6cb..627cf7146 100644
+--- a/test/compare_sgemv_sbgemv.c
++++ b/test/compare_sgemv_sbgemv.c
+@@ -122,7 +122,10 @@ main (int argc, char *argv[])
+   } // alpha
+   } // beta
+ 
+-  if (ret != 0)
+-    fprintf (stderr, "FATAL ERROR SBGEMV - Return code: %d\n", ret);
++  if (ret != 0) {
++    fprintf(stderr, "SBGEMV FAILURES: %d\n", ret);
++    return 1;
++  }
++
+   return ret;
+ }
+diff --git a/test/compare_sgemv_shgemv.c b/test/compare_sgemv_shgemv.c
+new file mode 100644
+index 000000000..9e92218ac
+--- /dev/null
++++ b/test/compare_sgemv_shgemv.c
+@@ -0,0 +1,130 @@
++/***************************************************************************
++Copyright (c) 2020,2025 The OpenBLAS Project
++All rights reserved.
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are
++met:
++1. Redistributions of source code must retain the above copyright
++notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++notice, this list of conditions and the following disclaimer in
++the documentation and/or other materials provided with the
++distribution.
++3. Neither the name of the OpenBLAS project nor the names of
++its contributors may be used to endorse or promote products
++derived from this software without specific prior written permission.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ARE DISCLAIMED. IN NO EVENT SHALL THE OPENBLAS PROJECT OR CONTRIBUTORS BE
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*****************************************************************************/
++#include <stdio.h>
++#include <stdint.h>
++#include "../common.h"
++
++#include "test_helpers.h"
++
++#define SGEMV   BLASFUNC(sgemv)
++#define SHGEMV   BLASFUNC(shgemv)
++#define SHGEMV_LARGEST  256
++
++int
++main (int argc, char *argv[])
++{
++  blasint k;
++  int i, j, l;
++  blasint x, y;
++  int ret = 0;
++  int loop = SHGEMV_LARGEST;
++  char transA = 'N';
++  float alpha = 1.0, beta = 0.0;
++
++  for (beta = 0; beta < 3; beta += 1) {
++  for (alpha = 0; alpha < 3; alpha += 1) {
++  for (l = 0; l < 2; l++) {  // l = 1 to test inc_x & inc_y not equal to one.
++  for (x = 1; x <= loop; x++)
++  {
++    k = (x == 0) ? 0 : l + 1;
++    float *A = (float *)malloc_safe(x * x * sizeof(FLOAT));
++    float *B = (float *)malloc_safe(x * sizeof(FLOAT) << l);
++    float *C = (float *)malloc_safe(x * sizeof(FLOAT) << l);
++    hfloat16 *AA = (hfloat16 *)malloc_safe(x * x * sizeof(hfloat16));
++    hfloat16 *BB = (hfloat16 *)malloc_safe(x * sizeof(hfloat16) << l);
++    float *CC = (float *)malloc_safe(x * sizeof(FLOAT) << l);
++    float *DD = (float *)malloc_safe(x * sizeof(FLOAT));
++    if ((A == NULL) || (B == NULL) || (C == NULL) || (AA == NULL) || (BB == NULL) ||
++        (DD == NULL) || (CC == NULL))
++      return 1;
++
++    for (j = 0; j < x; j++)
++    {
++      for (i = 0; i < x; i++)
++      {
++        A[j * x + i] = ((FLOAT) rand () / (FLOAT) RAND_MAX) + 0.5;
++        AA[j * x + i] = (_Float16)A[j * x + i];
++      }
++      B[j << l] = ((FLOAT) rand () / (FLOAT) RAND_MAX) + 0.5;
++      BB[j << l]= (_Float16)B[j << l];
++      
++      CC[j << l] = C[j << l] = ((FLOAT) rand () / (FLOAT) RAND_MAX) + 0.5;
++    }
++
++    for (y = 0; y < 2; y++)
++    {
++      if (y == 0) {
++        transA = 'N';
++      } else {
++        transA = 'T';
++      }
++
++      memset(CC, 0, x * sizeof(FLOAT) << l);
++      memset(DD, 0, x * sizeof(FLOAT));
++      memset(C, 0, x * sizeof(FLOAT) << l);
++
++      SGEMV (&transA, &x, &x, &alpha, A, &x, B, &k, &beta, C, &k);
++      SHGEMV (&transA, &x, &x, &alpha, (hfloat16*) AA, &x, (hfloat16*) BB, &k, &beta, CC, &k);
++
++      for (int i = 0; i < x; i ++) DD[i] *= beta;
++
++      for (j = 0; j < x; j++)
++        for (i = 0; i < x; i++)
++          if (transA == 'N') {
++            DD[i] += alpha * (float)(AA[j * x + i]) * (float)(BB[j << l]);
++          } else if (transA == 'T') {
++            DD[j] += alpha * (float)(AA[j * x + i]) * (float)(BB[i << l]);
++          }
++
++      for (j = 0; j < x; j++) {
++        if (!is_close(CC[j << l], C[j << l], 0.01, 0.001)) {
++          ret++;
++        }
++        if (!is_close(CC[j << l], DD[j], 0.001, 0.0001)) {
++          ret++;
++        }
++      }
++    }
++    free(A);
++    free(B);
++    free(C);
++    free(AA);
++    free(BB);
++    free(DD);
++    free(CC);
++  } // x
++  } // l
++  } // alpha
++  } // beta
++
++  if (ret != 0) {
++    fprintf (stderr, "SHGEMV FAILURES: %d\n", ret);
++    return 1;
++  }
++
++  return ret;
++}
