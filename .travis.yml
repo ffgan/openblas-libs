@@ -42,15 +42,15 @@ install:
     - echo done install step
 
 script:
-    - CIBW_BUILD="cp39-manylinux_${PLAT}"
-    - CIBW_MANYLINUX_S390X_IMAGE="manylinux${MB_ML_VER}"
-    - CIBW_MANYLINUX_PPC64LE_IMAGE="manylinux${MB_ML_VER}"
+    - export CIBW_BUILD="cp39-manylinux_${PLAT}"
+    - export CIBW_MANYLINUX_S390X_IMAGE="manylinux${MB_ML_VER}"
+    - export CIBW_MANYLINUX_PPC64LE_IMAGE="manylinux${MB_ML_VER}"
     
     - echo "Building for PLAT=${PLAT}, INTERFACE64=${INTERFACE64}, MB_ML_VER=${MB_ML_VER}, CIBW_BUILD=${CIBW_BUILD}, CIBW_MANYLINUX_S390X_IMAGE=${CIBW_MANYLINUX_S390X_IMAGE}, CIBW_MANYLINUX_PPC64LE_IMAGE=${CIBW_MANYLINUX_PPC64LE_IMAGE}"
 
     - cibuildwheel --print-build-identifiers
 
-    - cibuildwheel --output-dir dist
+    - cibuildwheel "." --output-dir "dist" 2>&1
 
 after_success:
     - set +ex
