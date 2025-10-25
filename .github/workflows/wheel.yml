@@ -10,7 +10,8 @@ on:
   #   - cron: '0 0 * * 0'
 
 env:
-  OPENBLAS_COMMIT: "v0.3.30"
+  # fix macos x86 build error, see https://github.com/OpenMathLib/OpenBLAS/issues/5477
+  OPENBLAS_COMMIT: "b48a089d7526211e5521a6767470b3d38642831e" 
   MACOSX_DEPLOYMENT_TARGET: 10.9
   OPENBLAS_ROOT: "c:\\opt"
   # Preserve working directory for calls into bash
@@ -29,7 +30,7 @@ jobs:
           # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
           # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          # - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
           - { os: macos-15-intel, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
           # - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
