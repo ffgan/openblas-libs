@@ -11,7 +11,7 @@ on:
 
 env:
   # fix macos x86 build error, see https://github.com/OpenMathLib/OpenBLAS/issues/5477
-  OPENBLAS_COMMIT: "b48a089d7526211e5521a6767470b3d38642831e" 
+  OPENBLAS_COMMIT: "v0.3.30" 
   MACOSX_DEPLOYMENT_TARGET: 10.9
   OPENBLAS_ROOT: "c:\\opt"
   # Preserve working directory for calls into bash
