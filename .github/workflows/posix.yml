@@ -24,25 +24,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
           - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: macos-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          - { os: ubuntu-latest, PLAT: riscv64, INTERFACE64: '0', MB_ML_VER: '_2_39', MB_ML_LIBC: manylinux}
+          - { os: ubuntu-latest, PLAT: riscv64, INTERFACE64: '1', MB_ML_VER: '_2_39', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
     env:
       NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
@@ -74,6 +78,9 @@ jobs:
     #   with:
     #     limit-access-to-actor: true
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
     - name: Build and Test wheels
       uses: pypa/cibuildwheel@v3.1.4
       with:
@@ -88,6 +95,7 @@ jobs:
         CIBW_MUSLLINUX_X86_64_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
         CIBW_MANYLINUX_AARCH64_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
         CIBW_MUSLLINUX_AARCH64_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
+        CIBW_MANYLINUX_RISCV64_IMAGE: ${{ matrix.MB_ML_LIBC }}${{matrix.MB_ML_VER}}
 
     - name: Upload wheels to artifacts
       uses: actions/upload-artifact@v4.3.0
