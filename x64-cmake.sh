@@ -1,5 +1,5 @@
 #!/bin/bash
-export OPENBLAS_COMMIT="v0.3.30"
+export OPENBLAS_COMMIT="v0.3.30-322-gef6f9762"
 export MACOSX_DEPLOYMENT_TARGET=10.9
 
 
