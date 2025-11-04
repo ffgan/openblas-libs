@@ -38,7 +38,7 @@ where = ["local"]
 install_requires = "importlib-metadata ~= 1.0 ; python_version < '3.8'"
 
 [tool.setuptools.package-data]
-scipy_openblas64 = ["lib/*", "include/*", "lib/pkgconfig/*", "lib/cmake/openblas/*"]
+scipy_openblas64 = ["lib64/*", "include/openblas64/*", "lib64/pkgconfig/*", "lib/cmake/openblas/OpenBLAS64/*"]
 
 [tool.cibuildwheel]
 before-build = "bash ci-before-build.sh"

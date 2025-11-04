@@ -14,14 +14,15 @@ mkdir -p dist
 $PYTHON -m pip install wheel auditwheel
 
 # This will fail if there is more than one file in libs
-tar -C local/scipy_openblas64 --strip-components=2 -xf libs/openblas*.tar.gz
+tar -vC local/scipy_openblas64 --strip-components=2 -xf libs/openblas*.tar.gz
 
 # do not package the static libs and symlinks, only take the shared object
-find local/scipy_openblas64/lib -maxdepth 1 -type l -delete
-rm local/scipy_openblas64/lib/*.a
+# find local/scipy_openblas64/lib -maxdepth 1 -type l -delete
+# rm local/scipy_openblas64/lib/*.a
 # Check that the pyproject.toml and the pkgconfig versions agree.
 py_version=$(grep "^version" pyproject.toml | sed -e "s/version = \"//")
-pkg_version=$(grep "version=" ./local/scipy_openblas64/lib/pkgconfig/scipy-openblas*.pc | sed -e "s/version=//" | sed -e "s/dev//")
+# Version: 0.3.30
+pkg_version=$(grep "^Version:" ./local/scipy_openblas64/lib64/pkgconfig/scipy-openblas*.pc | sed -e "s/Version: *//" | sed -e "s/dev//")
 if [[ -z "$pkg_version" ]]; then
   echo Could not read version from pkgconfig file
   exit 1
@@ -40,7 +41,7 @@ if [ $(uname) == "Darwin" ]; then
   install_name_tool -id @rpath/$soname local/scipy_openblas64/lib/$soname
 fi
 
-rm -rf local/scipy_openblas64/lib/pkgconfig
+rm -rf local/scipy_openblas64/lib64/pkgconfig
 echo "" >> LICENSE.txt
 echo "----" >> LICENSE.txt
 echo "" >> LICENSE.txt

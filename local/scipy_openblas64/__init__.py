@@ -39,7 +39,7 @@ def get_include_dir():
 def get_lib_dir():
     """Return the lib directory needed for linking
     """
-    return os.path.join(_HERE, "lib").replace("\\", "/")
+    return os.path.join(_HERE, "lib64").replace("\\", "/")
 
 
 def get_library(fullname=False):

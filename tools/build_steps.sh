@@ -207,13 +207,50 @@ function do_build_lib {
         sed -i 's/CTEST(fork, safety_after_fork_in_parent)/CTEST_SKIP(fork, safety_after_fork_in_parent)/g' ./utest/test_post_fork.c
         echo "QEMU has a race condition preventing fork tests to work as expected"
     fi
+
+    mkdir build
+    pushd build
+
     if [ -n "$dynamic_list" ]; then
+        # CFLAGS="$CFLAGS -fvisibility=protected -Wno-uninitialized" \
+        # make BUFFERSIZE=20 DYNAMIC_ARCH=1 QUIET_MAKE=1 \
+        #     USE_OPENMP=0 NUM_THREADS=64 \
+        #     DYNAMIC_LIST="$dynamic_list" \
+        #     BINARY="$bitness" $interface_flags \
+        #     TARGET="$target"
+        cmake_interface_flags=""
+        for flag in $interface_flags; do
+            cmake_interface_flags="$cmake_interface_flags -D$flag"
+        done
+
+
+        # cmake will build below for x86_64
+        # PRESCOTT CORE2 NEHALEM BARCELONA SANDYBRIDGE BULLDOZER PILEDRIVER STEAMROLLER EXCAVATOR HASWELL ZEN SKYLAKEX COOPERLAKE SAPPHIRERAPIDS
+
         CFLAGS="$CFLAGS -fvisibility=protected -Wno-uninitialized" \
-        make BUFFERSIZE=20 DYNAMIC_ARCH=1 QUIET_MAKE=1 \
-            USE_OPENMP=0 NUM_THREADS=64 \
-            DYNAMIC_LIST="$dynamic_list" \
-            BINARY="$bitness" $interface_flags \
-            TARGET="$target"
+        cmake -DCMAKE_BUILD_TYPE=Release -DBUFFERSIZE=20 -DDYNAMIC_ARCH=on \
+            -DUSE_OPENMP=0 -DNUM_THREADS=64 \
+            -DBUILD_SHARED_LIBS=ON \
+            -DUSE_PERL=on \
+            -DBINARY="$bitness" $cmake_interface_flags \
+            -DCMAKE_INSTALL_PREFIX=$BUILD_PREFIX \
+            -DTARGET="$target" \
+            ..
+        
+        cmake --build . -j$(nproc)
+
+        grep openblas_get_config objcopy.def
+
+        # can be found, scipy_openblas_get_config64_
+        nm  lib/libscipy_openblas64__64.so | grep openblas_get_config
+
+
+        # only openblas_get_config
+        nm -D lib/libscipy_openblas64__64.so | grep openblas_get_config
+
+
+
+        ctest -j$(nproc)
     else
         CFLAGS="$CFLAGS -fvisibility=protected -Wno-uninitialized" \
         make BUFFERSIZE=20 DYNAMIC_ARCH=1 QUIET_MAKE=1 \
@@ -221,34 +258,37 @@ function do_build_lib {
             BINARY="$bitness" $interface_flags \
             TARGET="$target"
     fi
-    make PREFIX=$BUILD_PREFIX $interface_flags install
+
+    # make PREFIX=$BUILD_PREFIX $interface_flags install
+    cmake --build . --target install
+    popd
+
     popd
     if [ "$nightly" = "1" ]; then
         local version="HEAD"
     else
         local version=$(cd OpenBLAS && git describe --tags --abbrev=8)
     fi
-    mv $BUILD_PREFIX/lib/pkgconfig/openblas*.pc $BUILD_PREFIX/lib/pkgconfig/scipy-openblas.pc
+    mv $BUILD_PREFIX/lib64/pkgconfig/openblas*.pc $BUILD_PREFIX/lib64/pkgconfig/scipy-openblas.pc
     local plat_tag=$(get_plat_tag $plat)
     if [ "$interface64" = "1" ]; then
         # OpenBLAS does not install the symbol suffixed static library,
         # do it ourselves
-        static_libname=$(basename `find OpenBLAS -maxdepth 1 -type f -name '*.a' \! -name '*.dll.a'`)
-        renamed_libname=$(basename `find OpenBLAS -maxdepth 1 -type f -name '*.renamed'`)
-        cp -f "OpenBLAS/${renamed_libname}" "$BUILD_PREFIX/lib/${static_libname}"
-        sed -e "s/\(^Cflags.*\)/\1 -DBLAS_SYMBOL_PREFIX=scipy_ -DBLAS_SYMBOL_SUFFIX=64_/" -i.bak $BUILD_PREFIX/lib/pkgconfig/scipy-openblas.pc
+        # static_libname=$(basename `find OpenBLAS  -type f -name '*.a' \! -name '*.dll.a'`)
+        # renamed_libname=$(basename `find OpenBLAS  -type f -name '*.renamed'`)
+        # cp -f "OpenBLAS/${renamed_libname}" "$BUILD_PREFIX/lib64/${static_libname}"
+        sed -e "s/\(^Cflags.*\)/\1 -DBLAS_SYMBOL_PREFIX=scipy_ -DBLAS_SYMBOL_SUFFIX=64_/" -i.bak $BUILD_PREFIX/lib64/pkgconfig/scipy-openblas.pc
     else
-        sed -e "s/\(^Cflags.*\)/\1 -DBLAS_SYMBOL_PREFIX=scipy_/" -i.bak $BUILD_PREFIX/lib/pkgconfig/scipy-openblas.pc
-    rm $BUILD_PREFIX/lib/pkgconfig/scipy-openblas.pc.bak
+        sed -e "s/\(^Cflags.*\)/\1 -DBLAS_SYMBOL_PREFIX=scipy_/" -i.bak $BUILD_PREFIX/lib64/pkgconfig/scipy-openblas.pc
+    # rm $BUILD_PREFIX/lib64/pkgconfig/scipy-openblas.pc.bak
     fi
-
-    local out_name="openblas${symbolsuffix}-${version}-${plat_tag}.tar.gz"
+    cat $BUILD_PREFIX/lib64/pkgconfig/scipy-openblas.pc
+    local out_name="openblas${symbolsuffix}-${version}-${plat_tag}${suff}.tar.gz"
     tar zcvf libs/$out_name \
         $BUILD_PREFIX/include/*blas* \
-        $BUILD_PREFIX/include/*lapack* \
-        $BUILD_PREFIX/lib/libscipy_openblas* \
-        $BUILD_PREFIX/lib/pkgconfig/scipy-openblas* \
-        $BUILD_PREFIX/lib/cmake/openblas
+        $BUILD_PREFIX/lib64/libscipy_openblas* \
+        $BUILD_PREFIX/lib64/pkgconfig/scipy-openblas* \
+        $BUILD_PREFIX/lib64/cmake/OpenBLAS64
 }
 
 
