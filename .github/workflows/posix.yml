@@ -112,34 +112,34 @@ jobs:
     - name: Set env variables
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
-        echo "START_DIR=$PWD" >> $env:GITHUB_ENV
+        echo "START_DIR=$PWD" >> $GITHUB_ENV
         # For interpretation of MSYSTEM, see:
         # https://sourceforge.net/p/msys2/discussion/general/thread/b7dfdac8/#3939
         if [ "${{ matrix.plat }}" = "x86" ]; then
-          echo "PLAT=i686" >> $env:GITHUB_ENV
-          echo "WHEEL_PLAT=win32" >> $env:GITHUB_ENV
-          echo "MSYSTEM=MINGW32" >> $env:GITHUB_ENV
+          echo "PLAT=i686" >> $GITHUB_ENV
+          echo "WHEEL_PLAT=win32" >> $GITHUB_ENV
+          echo "MSYSTEM=MINGW32" >> $GITHUB_ENV
           # No ucrt on 32-bits, so use _snprintf_c instead
-          echo "LDFLAGS=-static -static-libgcc -Wl,--defsym,_quadmath_snprintf=__snprintf_c" >> $env:GITHUB_ENV
-          echo "BUILD_BITS=32" >> $env:GITHUB_ENV
+          echo "LDFLAGS=-static -static-libgcc -Wl,--defsym,_quadmath_snprintf=__snprintf_c" >> $GITHUB_ENV
+          echo "BUILD_BITS=32" >> $GITHUB_ENV
         else
-          echo "PLAT=x86_64" >> $env:GITHUB_ENV
-          echo "WHEEL_PLAT=win_amd64" >> $env:GITHUB_ENV
-          echo "MSYSTEM=UCRT64" >> $env:GITHUB_ENV
-          echo "LDFLAGS=-lucrt -static -static-libgcc -Wl,--defsym,quadmath_snprintf=snprintf" >> $env:GITHUB_ENV
-          echo "BUILD_BITS=64" >> $env:GITHUB_ENV
+          echo "PLAT=x86_64" >> $GITHUB_ENV
+          echo "WHEEL_PLAT=win_amd64" >> $GITHUB_ENV
+          echo "MSYSTEM=UCRT64" >> $GITHUB_ENV
+          echo "LDFLAGS=-lucrt -static -static-libgcc -Wl,--defsym,quadmath_snprintf=snprintf" >> $GITHUB_ENV
+          echo "BUILD_BITS=64" >> $GITHUB_ENV
         fi
         if [ ${{ matrix.INTERFACE64 }} = "1" ]; then
-          echo "INTERFACE64=1" >> $env:GITHUB_ENV
+          echo "INTERFACE64=1" >> $GITHUB_ENV
         fi
         CIBW="${{ github.workspace }}/.openblas"
         CIBW="${CIBW//\\//}"
-        echo "CIBW_ENVIRONMENT_WINDOWS=PKG_CONFIG_PATH=$CIBW" >> $env:GITHUB_ENV
+        echo "CIBW_ENVIRONMENT_WINDOWS=PKG_CONFIG_PATH=$CIBW" >> $GITHUB_ENV
 
     - name: Debug
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
-        echo CIBW_ENVIRONMENT_WINDOWS=$env:CIBW_ENVIRONMENT_WINDOWS
+        echo CIBW_ENVIRONMENT_WINDOWS=$CIBW_ENVIRONMENT_WINDOWS
 
     - name: Setup visual studio
       if: ${{ matrix.os == 'windows-11-arm' }}
@@ -251,8 +251,8 @@ jobs:
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         cd local
-        cp -r "scipy_openblas${env:INTERFACE_BITS}" $env:INTERFACE_BITS
-        7z a ../builds/openblas-${env:PLAT}-${env:INTERFACE64}.zip -tzip $env:INTERFACE_BITS
+        cp -r "scipy_openblas${INTERFACE_BITS}" $INTERFACE_BITS
+        7z a ../builds/openblas-${PLAT}-${INTERFACE64}.zip -tzip $INTERFACE_BITS
 
     - uses: actions/upload-artifact@v4.3.0
       if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
