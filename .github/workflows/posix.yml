@@ -184,21 +184,20 @@ jobs:
   
     - name: Build OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
+      env:
+          BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
       run: |
-          export BASH_PATH="c:/rtools40/usr/bin/bash.exe"
-          pwd
-          ls -a
           # Build
-          $BASH_PATH -c ./tools/build_openblas.sh
+          $BASH_PATH ./tools/build_openblas.sh
           # Test
-          $BASH_PATH -c ./tools/build_gfortran.sh
+          $BASH_PATH ./tools/build_gfortran.sh
           echo "Static test"
           ./for_test/test.exe
           echo "Dynamic test"
           ./for_test/test_dyn.exe
           # Copy
           cp for_test/test*.exe builds
-          $BASH_PATH -c ./tools/build_wheel_prepare_for_win.sh
+          $BASH_PATH ./tools/build_wheel_prepare_for_win.sh
     - name: Build OpenBLAS for Windows On ARM
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
