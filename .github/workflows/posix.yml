@@ -186,7 +186,6 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       env:
           BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
-          SHELL: "c:/rtools40/usr/bin/bash.exe"
       run: |
           # Build
           $BASH_PATH ./tools/build_openblas.sh

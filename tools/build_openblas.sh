@@ -22,7 +22,7 @@
 
 set -xe
 
-export SHELL="c:/rtools40/usr/bin/bash.exe"
+export SHELL="C:/Program Files/Git/bin/bash.exe"
 export BASH_PATH=$SHELL
 # Convert to Unix-style path
 openblas_root="$(cygpath ${1:-${OPENBLAS_ROOT:-c:\\opt}})"
