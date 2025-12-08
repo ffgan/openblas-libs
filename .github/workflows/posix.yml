@@ -149,8 +149,7 @@ jobs:
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         curl -L https://www.7-zip.org/a/7z2409-arm64.exe -o 7z_arm.exe
-        ./7z_arm.exe /S &
-        wait
+        ./7z_arm.exe /S
         echo "C:\Program Files\7-Zip" >> $GITHUB_PATH
         # Invoke-WebRequest https://www.7-zip.org/a/7z2409-arm64.exe -UseBasicParsing -OutFile 7z_arm.exe
         # Start-Process -FilePath ".\7z_arm.exe" -ArgumentList "/S" -Wait
@@ -160,8 +159,7 @@ jobs:
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.5/LLVM-19.1.5-woa64.exe -o LLVM-woa64.exe
-        ./LLVM-woa64.exe /S &
-        wait
+        ./LLVM-woa64.exe /S
         echo "C:\Program Files\LLVM\bin" >> $GITHUB_PATH
         #Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.5/LLVM-19.1.5-woa64.exe -UseBasicParsing -OutFile LLVM-woa64.exe
         #Start-Process -FilePath ".\LLVM-woa64.exe" -ArgumentList "/S" -Wait
