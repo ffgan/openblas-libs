@@ -115,25 +115,25 @@ jobs:
         echo "START_DIR=$PWD" >> $env:GITHUB_ENV
         # For interpretation of MSYSTEM, see:
         # https://sourceforge.net/p/msys2/discussion/general/thread/b7dfdac8/#3939
-        if ( "${{ matrix.plat }}" -eq "x86") {
+        if [ "${{ matrix.plat }}" = "x86" ]; then
           echo "PLAT=i686" >> $env:GITHUB_ENV
           echo "WHEEL_PLAT=win32" >> $env:GITHUB_ENV
           echo "MSYSTEM=MINGW32" >> $env:GITHUB_ENV
           # No ucrt on 32-bits, so use _snprintf_c instead
           echo "LDFLAGS=-static -static-libgcc -Wl,--defsym,_quadmath_snprintf=__snprintf_c" >> $env:GITHUB_ENV
           echo "BUILD_BITS=32" >> $env:GITHUB_ENV
-        } else {
+        else
           echo "PLAT=x86_64" >> $env:GITHUB_ENV
           echo "WHEEL_PLAT=win_amd64" >> $env:GITHUB_ENV
           echo "MSYSTEM=UCRT64" >> $env:GITHUB_ENV
           echo "LDFLAGS=-lucrt -static -static-libgcc -Wl,--defsym,quadmath_snprintf=snprintf" >> $env:GITHUB_ENV
           echo "BUILD_BITS=64" >> $env:GITHUB_ENV
-        }
-        if ( ${{ matrix.INTERFACE64 }} -eq "1" ) {
+        fi
+        if [ ${{ matrix.INTERFACE64 }} = "1" ]; then
           echo "INTERFACE64=1" >> $env:GITHUB_ENV
-        }
-        $CIBW = "${{ github.workspace }}/.openblas"
-        $CIBW = $CIBW.replace("\","/")
+        fi
+        CIBW="${{ github.workspace }}/.openblas"
+        CIBW="${CIBW//\\//}"
         echo "CIBW_ENVIRONMENT_WINDOWS=PKG_CONFIG_PATH=$CIBW" >> $env:GITHUB_ENV
 
     - name: Debug
@@ -148,30 +148,38 @@ jobs:
     - name: Download, install 7zip.
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
-        Invoke-WebRequest https://www.7-zip.org/a/7z2409-arm64.exe -UseBasicParsing -OutFile 7z_arm.exe
-        Start-Process -FilePath ".\7z_arm.exe" -ArgumentList "/S" -Wait
-        echo "C:\Program Files\7-Zip" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        curl -L https://www.7-zip.org/a/7z2409-arm64.exe -o 7z_arm.exe
+        ./7z_arm.exe /S &
+        wait
+        echo "C:\Program Files\7-Zip" >> $GITHUB_PATH
+        # Invoke-WebRequest https://www.7-zip.org/a/7z2409-arm64.exe -UseBasicParsing -OutFile 7z_arm.exe
+        # Start-Process -FilePath ".\7z_arm.exe" -ArgumentList "/S" -Wait
+        # echo "C:\Program Files\7-Zip" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Download and install LLVM installer
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
-        Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.5/LLVM-19.1.5-woa64.exe -UseBasicParsing -OutFile LLVM-woa64.exe
-        Start-Process -FilePath ".\LLVM-woa64.exe" -ArgumentList "/S" -Wait
-        echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.5/LLVM-19.1.5-woa64.exe -o LLVM-woa64.exe
+        ./LLVM-woa64.exe /S &
+        wait
+        echo "C:\Program Files\LLVM\bin" >> $GITHUB_PATH
+        #Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.5/LLVM-19.1.5-woa64.exe -UseBasicParsing -OutFile LLVM-woa64.exe
+        #Start-Process -FilePath ".\LLVM-woa64.exe" -ArgumentList "/S" -Wait
+        #echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Update CMake for WoA
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         pip install cmake
-        get-command cmake
+        which cmake
     - name: Set env variables
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
-        if ( ${{ matrix.INTERFACE64 }} -eq "1" ) {
-          echo "INTERFACE_BITS=64" >> $env:GITHUB_ENV
-        } else {
-          echo "INTERFACE_BITS=32" >> $env:GITHUB_ENV
-        }
+        if [ "${{ matrix.INTERFACE64 }}" = "1" ]; then
+          echo "INTERFACE_BITS=64" >> $GITHUB_ENV
+        else
+          echo "INTERFACE_BITS=32" >> $GITHUB_ENV
+        fi
 
 
     # - name: Setup tmate session
@@ -183,29 +191,25 @@ jobs:
     - name: Build OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
-          Set-Item -Path env:BASH_PATH -Value "c:\\rtools40\\usr\\bin\\bash.exe"
+          export BASH_PATH="c:/rtools40/usr/bin/bash.exe"
           # Build
-          & $env:BASH_PATH -lc tools/build_openblas.sh
-
+          $BASH_PATH -lc tools/build_openblas.sh
           # Test
-          & $env:BASH_PATH -lc tools/build_gfortran.sh
+          $BASH_PATH -lc tools/build_gfortran.sh
           echo "Static test"
-          .\for_test\test.exe
+          ./for_test/test.exe
           echo "Dynamic test"
-          .\for_test\test_dyn.exe
-
+          ./for_test/test_dyn.exe
           # Copy
-          cp for_test\test*.exe builds
-
+          cp for_test/test*.exe builds
           bash tools/build_wheel_prepare_for_win.sh
     - name: Build OpenBLAS for Windows On ARM
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
-          Set-Item -Path env:BASH_PATH -Value "C:\\Program Files\\Git\\bin\\bash.exe"
-          .\tools\build_steps_win_arm64.bat 64 ${env:INTERFACE_BITS}
+          export BASH_PATH="C:/Program Files/Git/bin/bash.exe"
+          ./tools/build_steps_win_arm64.bat 64 $INTERFACE_BITS
 
     - name: Set CIBW_BUILD
-      shell: bash
       run: |
         if [[ "${{ matrix.os }}" == "windows-latest" && "${{matrix.PLAT}}" == "x86" ]]; then
           echo "CIBW_BUILD=cp39-${{ matrix.MB_ML_LIBC }}32" >> $GITHUB_ENV
