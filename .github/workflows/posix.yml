@@ -177,7 +177,7 @@ jobs:
       run: |
           Set-Item -Path env:BASH_PATH -Value "c:\\rtools40\\usr\\bin\\bash.exe"
           # Build
-          & $env:BASH_PATH -lc tools/build_openblas.sh
+          & $env:BASH_PATH -lc tools/build_steps_windows.sh
 
           # Test
           & $env:BASH_PATH -lc tools/build_gfortran.sh
