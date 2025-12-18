@@ -1,7 +1,7 @@
 set -xe
 pip install delvewheel
 
-if [[ ${OS-NAME} -eq "windows-latest" ]]; then
+if [[ ${OSNAME} -eq "windows-latest" ]]; then
     # Since it has the correct platform tag, we don't need to rename the wheel for windows-latest
     # for f in dist/*.whl; 
     #     do mv $f "${f/%any.whl/$WHEEL_PLAT.whl}";

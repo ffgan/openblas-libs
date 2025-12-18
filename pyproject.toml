@@ -49,7 +49,7 @@ environment-pass = [
   "INTERFACE64",
   "BUILD_DIR",
   "PLAT",
-  "OS-NAME",
+  "OSNAME",
   "RUNNER_ARCH",
 ]
 [tool.cibuildwheel.linux]
