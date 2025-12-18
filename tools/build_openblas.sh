@@ -22,8 +22,8 @@
 
 set -xe
 
-export SHELL="C:/Program Files/Git/bin/bash.exe"
-export BASH_PATH=$SHELL
+export SHELL='C:/Program Files/Git/bin/bash.exe'
+export BASH_PATH="$SHELL"
 # Convert to Unix-style path
 openblas_root="$(cygpath ${1:-${OPENBLAS_ROOT:-c:\\opt}})"
 build_bits="${2:-${BUILD_BITS:-64}}"
@@ -139,7 +139,7 @@ case $? in
 esac
 set -e
 
-make SHELL=$SHELL PREFIX=$openblas_root/$build_bits $interface_flags install
+make SHELL="$SHELL" PREFIX=$openblas_root/$build_bits $interface_flags install
 DLL_BASENAME=libscipy_openblas${LIBNAMESUFFIX}
 cp -f *.dll.a $openblas_root/$build_bits/lib/${DLL_BASENAME}.dll.a
 
