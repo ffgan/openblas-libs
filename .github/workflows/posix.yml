@@ -2,11 +2,11 @@ name: posix
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches:
-      - main
-      - maintenance/**
+  #   branches: [ main ]
+  # pull_request:
+  #   branches:
+  #     - main
+  #     - maintenance/**
   workflow_dispatch: null
   schedule:
     - cron: '0 0 * * 0'
