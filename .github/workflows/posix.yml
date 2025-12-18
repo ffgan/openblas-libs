@@ -271,7 +271,7 @@ jobs:
         name: openblas-${{matrix.plat }}-${{ matrix.INTERFACE64 }}
         path: builds/openblas*.zip
     - name: Install Anaconda client
-      if: ${{ matrix.os == 'windows-11-arm' }}
+      if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
       run: |
         pip install anaconda-client
 
