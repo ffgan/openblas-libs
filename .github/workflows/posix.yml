@@ -138,6 +138,7 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Download, install 7zip.
+      shell: pwsh
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         Invoke-WebRequest https://www.7-zip.org/a/7z2409-arm64.exe -UseBasicParsing -OutFile 7z_arm.exe
@@ -145,6 +146,7 @@ jobs:
         echo "C:\Program Files\7-Zip" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Download and install LLVM installer
+      shell: pwsh
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.5/LLVM-19.1.5-woa64.exe -UseBasicParsing -OutFile LLVM-woa64.exe
@@ -173,6 +175,7 @@ jobs:
     #     limit-access-to-actor: true
   
     - name: Build OpenBLAS for Windows
+      shell: pwsh
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
           Set-Item -Path env:BASH_PATH -Value "c:\\rtools40\\usr\\bin\\bash.exe"
@@ -191,6 +194,7 @@ jobs:
 
           bash tools/build_wheel_prepare_for_win.sh
     - name: Build OpenBLAS for Windows On ARM
+      shell: pwsh
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
           Set-Item -Path env:BASH_PATH -Value "C:\\Program Files\\Git\\bin\\bash.exe"
@@ -232,35 +236,14 @@ jobs:
         name: wheels-${{ matrix.os }}-${{ matrix.PLAT }}-${{ matrix.INTERFACE64 }}-${{ matrix.MB_ML_LIBC }}-${{ matrix.MB_ML_VER }}
         path: dist/scipy_openblas*.whl
 
-
-    - name: Upload openblas to artifacts
-      if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm' || matrix.os == 'macos-latest' }}
-      uses: actions/upload-artifact@v4.3.0
-      with:
-        name: openblas-${{ matrix.os }}-${{ matrix.PLAT }}-${{ matrix.INTERFACE64 }}-${{ matrix.MB_ML_LIBC }}-${{ matrix.MB_ML_VER }}
-        path: dist/openblas*.tar.gz
-    - name: Pack
-      if: ${{ matrix.os == 'windows-11-arm' }}
-      run: |
-        cd local
-        cp -r "scipy_openblas${env:INTERFACE_BITS}" $env:INTERFACE_BITS
-        7z a ../builds/openblas-${env:PLAT}-${env:INTERFACE64}.zip -tzip $env:INTERFACE_BITS
-
-    - uses: actions/upload-artifact@v4.3.0
-      if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
-      with:
-        name: wheels-${{matrix.plat }}-${{ matrix.INTERFACE64 }}
-        path: dist/scipy_openblas*.whl
-
-    - uses: actions/upload-artifact@v4.3.0
-      if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
-      with:
-        name: openblas-${{matrix.plat }}-${{ matrix.INTERFACE64 }}
-        path: builds/openblas*.zip
     - name: Install Anaconda client
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         pip install anaconda-client
+    - name: install anaconda client
+      if: ${{ matrix.os != 'windows-11-arm' }}
+      run: |
+        conda install anaconda-client
 
     - uses: conda-incubator/setup-miniconda@v3.2.0
       if: ${{ matrix.os != 'windows-11-arm' }}
@@ -271,10 +254,6 @@ jobs:
         miniforge-version: latest
         conda-remove-defaults: "true"
 
-    - name: install anaconda client
-      if: ${{ matrix.os != 'windows-11-arm' }}
-      run: |
-        conda install anaconda-client
     - name: Upload
       # see https://github.com/marketplace/actions/setup-miniconda for why
       # `-el {0}` is required.
