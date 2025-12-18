@@ -185,7 +185,7 @@ jobs:
     - name: Build OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
       env:
-          shell: 	pwsh
+          shell: 	powershell
           BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
       run: |
           # Build
