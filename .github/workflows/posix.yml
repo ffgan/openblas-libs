@@ -215,7 +215,13 @@ jobs:
           cp for_test\test*.exe builds
 
 
-          & $env:BASH_PATH -lc ./tools/build_wheel_prepare_for_win.sh
+    - name: Set up Python
+      if: ${{ matrix.os == 'windows-latest' }}
+      uses: actions/setup-python@v5
+      with:
+          python-version: 3.9
+          architecture: ${{ matrix.PYTHON_PLAT }}
+
     - name: Build OpenBLAS for Windows On ARM
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
