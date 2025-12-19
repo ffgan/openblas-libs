@@ -181,12 +181,17 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       shell: pwsh
       env:
+          OPENBLAS_ROOT: "c:\\opt"
           BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
+          CHERE_INVOKING: "yes"
       run: |
-        & $env:BASH_PATH -lc "cd /d/a/openblas-libs/openblas-libs && pwd && ls -al && ./tools/build_steps_windows.sh"
+        & $env:BASH_PATH -lc ./tools/build_steps_windows.sh
 
     - name: Test OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
+      env: 
+         OPENBLAS_ROOT: "c:\\opt"
+         CHERE_INVOKING: "yes"
       run: |
           export BASH_PATH="C:/Program Files/Git/bin/bash.exe"
           
