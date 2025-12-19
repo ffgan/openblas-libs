@@ -50,11 +50,11 @@ jobs:
 
 
           - { os: windows-latest, PLAT: amd64, ARCH: AMD64, INTERFACE64: '1', MB_ML_LIBC: win}
-          # - { os: windows-latest, PLAT: amd64, ARCH: AMD64, INTERFACE64: '0', MB_ML_LIBC: win}
-          # - { os: windows-latest, PLAT: x86, ARCH: x86, INTERFACE64: '0', MB_ML_LIBC: win}
+          - { os: windows-latest, PLAT: amd64, ARCH: AMD64, INTERFACE64: '0', MB_ML_LIBC: win}
+          - { os: windows-latest, PLAT: x86, ARCH: x86, INTERFACE64: '0', MB_ML_LIBC: win}
 
-          # - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '1', MB_ML_LIBC: win}
-          # - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '0', MB_ML_LIBC: win}
+          - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '1', MB_ML_LIBC: win}
+          - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '0', MB_ML_LIBC: win}
 
 
     env:
@@ -248,6 +248,7 @@ jobs:
         pip install anaconda-client
 
     - uses: conda-incubator/setup-miniconda@v3.2.0
+      if: ${{ matrix.os != 'windows-11-arm' }}
       with:
         channels: conda-forge
         channel-priority: true
