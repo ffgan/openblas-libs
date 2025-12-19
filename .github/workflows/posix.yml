@@ -248,18 +248,26 @@ jobs:
         path: dist/scipy_openblas*.whl
 
     - name: Install Anaconda client
-      if: ${{ matrix.os == 'windows-latest' || matrix.os == 'windows-11-arm' }}
+      if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
         pip install anaconda-client
 
     - uses: conda-incubator/setup-miniconda@v3.2.0
-      if: ${{ matrix.os != 'windows-11-arm' }}
+      if: ${{ matrix.os != 'windows-latest' && matrix.os != 'windows-11-arm' }}
       with:
         channels: conda-forge
         channel-priority: true
         activate-environment: upload
         miniforge-version: latest
         conda-remove-defaults: "true"
+
+    - uses: conda-incubator/setup-miniconda@v3.1.1
+      if: ${{ matrix.os == 'windows-latest' }}
+      with:
+        channels: conda-forge
+        channel-priority: true
+        activate-environment: upload
+        miniforge-version: latest
 
     - name: install anaconda-client
       if: ${{ matrix.os != 'windows-11-arm' }}
