@@ -67,6 +67,6 @@ test-command = "cd {package} && bash ci-test.sh"
 archs = ["x86_64", "arm64"]
 
 [tool.cibuildwheel.windows]
-repair-wheel-command = "bash tools\repair_for_win.sh {dest_dir} {wheel}"
-test-command = "bash {project}\tools\test_for_win.sh"
+repair-wheel-command = "bash tools\\repair_for_win.sh {dest_dir} {wheel}"
+test-command = "bash {project}\\tools\\test_for_win.sh"
 archs = ["AMD64", "x86", "ARM64"]
