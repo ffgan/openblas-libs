@@ -286,6 +286,7 @@ jobs:
 
     - name: install anaconda client
       if: ${{ matrix.os != 'windows-11-arm' }}
+      shell: pwsh
       run: |
         conda install anaconda-client
     - name: Upload
