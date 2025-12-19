@@ -256,6 +256,10 @@ jobs:
         miniforge-version: latest
         conda-remove-defaults: "true"
 
+    - name: install anaconda-client
+      if: ${{ matrix.os != 'windows-11-arm' }}
+      run: conda install -y anaconda-client
+
     - name: Upload
       # see https://github.com/marketplace/actions/setup-miniconda for why
       # `-el {0}` is required.
@@ -263,6 +267,5 @@ jobs:
       env:
        ANACONDA_SCIENTIFIC_PYTHON_UPLOAD: ${{ secrets.ANACONDA_SCIENTIFIC_PYTHON_UPLOAD }}
       run: |
-        conda install -y anaconda-client
         source tools/upload_to_anaconda_staging.sh
         upload_wheels
