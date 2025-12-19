@@ -189,21 +189,26 @@ jobs:
 
     - name: Test OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
+      shell: pwsh
       env: 
          OPENBLAS_ROOT: "c:\\opt"
+         BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
          CHERE_INVOKING: "yes"
       run: |
-          export BASH_PATH="C:/Program Files/Git/bin/bash.exe"
+          & $env:BASH_PATH -lc tools/build_gfortran.sh
+          
           
           # Test
-          ./tools/build_gfortran.sh
           echo "Static test"
-          ./for_test/test.exe
+          .\for_test\test.exe
           echo "Dynamic test"
-          ./for_test/test_dyn.exe
+          .\for_test\test_dyn.exe
+
           # Copy
-          cp for_test/test*.exe builds
-          ./tools/build_wheel_prepare_for_win.sh
+          cp for_test\test*.exe builds
+
+
+          & $env:BASH_PATH -lc ./tools/build_wheel_prepare_for_win.sh
     - name: Build OpenBLAS for Windows On ARM
       if: ${{ matrix.os == 'windows-11-arm' }}
       run: |
