@@ -187,6 +187,13 @@ jobs:
       run: |
         & $env:BASH_PATH -lc ./tools/build_steps_windows.sh
 
+    - name: Set up Python
+      if: ${{ matrix.os == 'windows-latest' }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.9
+        architecture: ${{ matrix.plat }}
+
     - name: Test OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
       shell: pwsh
