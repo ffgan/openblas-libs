@@ -183,8 +183,8 @@ jobs:
       env:
           BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
       run: |
-        workspace=${{ github.workspace }}
-        workspace=${workspace//\\//}
+        workspace="${{ github.workspace }}"
+        workspace="${workspace//\\//}"
         & $env:BASH_PATH -lc "cd $workspace && ./tools/build_steps_windows.sh"
 
     - name: Test OpenBLAS for Windows
