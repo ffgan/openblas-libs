@@ -183,7 +183,7 @@ jobs:
       env:
           BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
       run: |
-        & $env:BASH_PATH -lc "cd $BUILD_DIR && ./tools/build_steps_windows.sh"
+        & $env:BASH_PATH -lc "cd $START_DIR && pwd && ls -al && ./tools/build_steps_windows.sh"
 
     - name: Test OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
