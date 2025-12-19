@@ -214,6 +214,9 @@ jobs:
           # Copy
           cp for_test\test*.exe builds
 
+    - name: prepare wheel
+      run: |
+        ./tools/build_wheel_prepare_for_win.sh
 
     - name: Set up Python
       if: ${{ matrix.os == 'windows-latest' }}
