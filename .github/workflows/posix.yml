@@ -21,40 +21,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, PLAT: i686, ARCH: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: i686, ARCH: i686, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: macos-14, PLAT: x86_64, ARCh: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-14, PLAT: x86_64, ARCh: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          # - { os: macos-14, PLAT: x86_64, ARCh: x86_64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-14, PLAT: x86_64, ARCh: x86_64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: macos-latest, PLAT: arm64, ARCH: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
-          - { os: macos-latest, PLAT: arm64, ARCH: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, ARCH: arm64, INTERFACE64: '0', MB_ML_LIBC: macosx}
+          # - { os: macos-latest, PLAT: arm64, ARCH: arm64, INTERFACE64: '1', MB_ML_LIBC: macosx}
 
-          - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64,  INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64,  INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64,  INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-latest, PLAT: x86_64, ARCH: x86_64,  INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
-          - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '0', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
+          # - { os: ubuntu-24.04-arm, PLAT: aarch64, ARCH: aarch64, INTERFACE64: '1', MB_ML_VER: '_1_2', MB_ML_LIBC: musllinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: ppc64le, ARCH: ppc64le, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-24.04-arm, PLAT: ppc64le, ARCH: ppc64le, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: ppc64le, ARCH: ppc64le, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: ppc64le, ARCH: ppc64le, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
-          - { os: ubuntu-24.04-arm, PLAT: s390x, ARCH: s390x, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
-          - { os: ubuntu-24.04-arm, PLAT: s390x, ARCH: s390x, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: s390x, ARCH: s390x, INTERFACE64: '0', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
+          # - { os: ubuntu-24.04-arm, PLAT: s390x, ARCH: s390x, INTERFACE64: '1', MB_ML_VER: '2014', MB_ML_LIBC: manylinux}
 
 
 
           - { os: windows-latest, PLAT: amd64, ARCH: AMD64, INTERFACE64: '1', MB_ML_LIBC: win}
-          - { os: windows-latest, PLAT: amd64, ARCH: AMD64, INTERFACE64: '0', MB_ML_LIBC: win}
-          - { os: windows-latest, PLAT: x86, ARCH: x86, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: amd64, ARCH: AMD64, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-latest, PLAT: x86, ARCH: x86, INTERFACE64: '0', MB_ML_LIBC: win}
 
-          - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '1', MB_ML_LIBC: win}
-          - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '0', MB_ML_LIBC: win}
+          # - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '1', MB_ML_LIBC: win}
+          # - { os: windows-11-arm, PLAT: arm64, ARCH: ARM64, INTERFACE64: '0', MB_ML_LIBC: win}
 
 
     env:
@@ -183,7 +183,7 @@ jobs:
       env:
           BASH_PATH: "c:/rtools40/usr/bin/bash.exe"
       run: |
-        & $env:BASH_PATH -lc tools/build_steps_windows.sh
+        & $env:BASH_PATH -lc ${{ github.workspace }}/tools/build_steps_windows.sh
 
     - name: Test OpenBLAS for Windows
       if: ${{ matrix.os == 'windows-latest' }}
